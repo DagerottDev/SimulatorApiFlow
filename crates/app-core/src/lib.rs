@@ -523,11 +523,11 @@ fn restore_android_proxy(
 }
 
 async fn wait_for_certificate(path: &Path) -> Result<PathBuf, AppError> {
-    for _ in 0..40 {
+    for _ in 0..100 {
         if path.is_file() {
             return Ok(path.to_path_buf());
         }
-        sleep(Duration::from_millis(50)).await;
+        sleep(Duration::from_millis(100)).await;
     }
     Err(AppError::new(
         "capture_ca_not_ready",
@@ -683,3 +683,38 @@ impl CoreService {
 }
 
 mod dispatch;
+
+#[cfg(test)]
+mod certificate_wait_tests {
+    use super::*;
+
+    #[test]
+    fn accepts_ca_created_after_cold_start_delay() {
+        tokio::runtime::Builder::new_current_thread()
+            .enable_time()
+            .build()
+            .unwrap()
+            .block_on(async {
+                let suffix = SystemTime::now()
+                    .duration_since(UNIX_EPOCH)
+                    .unwrap()
+                    .as_nanos();
+                let directory = std::env::temp_dir().join(format!(
+                    "mas-ca-wait-{}-{suffix}",
+                    std::process::id()
+                ));
+                fs::create_dir_all(&directory).unwrap();
+                let certificate = directory.join("mitmproxy-ca-cert.pem");
+                let delayed_certificate = certificate.clone();
+                let writer = tokio::spawn(async move {
+                    sleep(Duration::from_millis(2_500)).await;
+                    fs::write(delayed_certificate, b"test ca").unwrap();
+                });
+
+                let found = wait_for_certificate(&certificate).await.unwrap();
+                writer.await.unwrap();
+                fs::remove_dir_all(directory).unwrap();
+                assert_eq!(found, certificate);
+            });
+    }
+}
