@@ -85,6 +85,8 @@ let session = URLSession(configuration: config)
 
 This installs the SDK's opt-in `URLProtocol`. When the SDK is disabled the configuration is returned unchanged.
 
+The protocol forwards requests with its own ephemeral `URLSession`. It does not inherit custom settings from the original session, including a per-session proxy. If your client needs custom session or network settings, use the manual request instrumentation below and call `complete` when the client finishes. The Simulator's system-wide proxy path for automatic integration still needs device validation.
+
 ### Manual/custom networking integration
 
 For a custom client, instrument a `URLRequest` directly:

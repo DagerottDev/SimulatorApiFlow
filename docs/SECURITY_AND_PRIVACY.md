@@ -136,6 +136,7 @@ selected comparison/flow
  -> sensitive-header redaction
  -> internal-header omission
  -> configurable JSON/query secret-key redaction
+ -> form-encoded body secret-key redaction
  -> body/string/context limits
  -> exact context preview
  -> SHA-256 context fingerprint
@@ -171,13 +172,17 @@ When a client rejects the interception CA:
 
 ## 12. Listener exposure
 
+### Browser UI and control API
+
+The source-built service binds to `127.0.0.1:8180` by default. `--port` changes only this listener. API commands use a process-lifetime random token in a request header, not a URL. Host and Origin checks reject unexpected web origins, and responses carry restrictive browser headers. Browser import/export uses local file selection and downloads; the existing bundle redaction rules still apply. Other processes running as the same macOS user remain within the local trust boundary.
+
 ### Capture
 
 Android Emulator host routing can require the capture proxy to be reachable from the emulator through its host alias. This is a broader binding than loopback and must be treated as a development-host exposure.
 
 ### SDK telemetry
 
-The desktop SDK ingestion listener binds to host loopback. Android Emulator reaches that loopback through `10.0.2.2`; it is not intended as a LAN telemetry service.
+The desktop SDK ingestion listener binds to host loopback. Android Emulator reaches that loopback through `10.0.2.2`; it is not intended as a LAN telemetry service. The listener accepts the documented loopback Host values and rejects requests carrying an Origin header, so a web page cannot submit SDK events through a cross-origin browser request. Native SDK clients do not set Origin.
 
 Control/SDK interfaces should not become unauthenticated general LAN APIs.
 

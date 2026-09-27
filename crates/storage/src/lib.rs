@@ -1,5 +1,8 @@
 mod detail;
+mod import;
 mod workflow;
+
+pub use import::{ImportedFlow, ImportedSession, WorkspaceReplacement};
 
 use core_model::{CaptureSession, FlowSource, FlowSummary, SessionStatus};
 use rusqlite::{params, Connection};
@@ -384,7 +387,7 @@ impl BodyStore {
     }
 
     pub fn read(&self, sha256: &str) -> Result<Vec<u8>, StorageError> {
-        if sha256.len() < 4 {
+        if sha256.len() != 64 || !sha256.bytes().all(|byte| byte.is_ascii_hexdigit()) {
             return Err(StorageError::InvalidBodyHash);
         }
 
@@ -395,6 +398,31 @@ impl BodyStore {
             .join(format!("{sha256}.body"));
 
         Ok(fs::read(path)?)
+    }
+}
+
+#[cfg(test)]
+mod body_hash_tests {
+    use super::*;
+
+    #[test]
+    fn body_reads_require_a_hex_sha256_digest() {
+        let root = std::env::temp_dir().join(format!(
+            "mas-body-hash-test-{}-{}",
+            std::process::id(),
+            std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .unwrap()
+                .as_nanos()
+        ));
+        let store = BodyStore::new(&root).unwrap();
+        let non_hex = "g".repeat(64);
+        for invalid in ["../../outside", "🔥🔥", non_hex.as_str()] {
+            assert!(matches!(store.read(invalid), Err(StorageError::InvalidBodyHash)));
+        }
+        let stored = store.put(b"sample body").unwrap();
+        assert_eq!(store.read(&stored.sha256).unwrap(), b"sample body");
+        fs::remove_dir_all(root).unwrap();
     }
 }
 

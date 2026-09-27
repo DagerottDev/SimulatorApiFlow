@@ -1,4 +1,4 @@
-import { invoke } from "@tauri-apps/api/core";
+import { invoke } from "../api/invoke";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import type { MockFixture, MockRule } from "../mockTypes";
 import type { FlowSdkEnrichment, SdkContextSnapshot, SdkEnvelope } from "../sdkTypes";
@@ -18,13 +18,14 @@ type StatusFilter = "all" | "2xx" | "3xx" | "4xx" | "5xx";
 const METHODS = ["all", "GET", "POST", "PUT", "PATCH", "DELETE", "HEAD", "OPTIONS"];
 const SOURCES: Array<"all" | FlowSource> = ["all", "proxy", "replay", "mock", "sdk", "fixture"];
 
-export function TrafficView() {
+export function TrafficView({ onOpenConnect }: { onOpenConnect: () => void }) {
   const [results, setResults] = useState<TrafficSearchResult[]>([]);
   const [sessions, setSessions] = useState<CaptureSession[]>([]);
   const [collections, setCollections] = useState<SavedCollection[]>([]);
   const [selectedFlowId, setSelectedFlowId] = useState<string | null>(null);
   const [detail, setDetail] = useState<FlowDetail | null>(null);
   const [sdkEnrichment, setSdkEnrichment] = useState<FlowSdkEnrichment | null>(null);
+  const [sdkError, setSdkError] = useState<string | null>(null);
   const [requestBody, setRequestBody] = useState<BodyPayload | null>(null);
   const [responseBody, setResponseBody] = useState<BodyPayload | null>(null);
   const [textFilter, setTextFilter] = useState("");
@@ -35,6 +36,10 @@ export function TrafficView() {
   const [sessionFilter, setSessionFilter] = useState("all");
   const [collectionId, setCollectionId] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [detailLoading, setDetailLoading] = useState(false);
+  const [detailError, setDetailError] = useState<string | null>(null);
+  const [detailRetry, setDetailRetry] = useState(0);
   const [curlPreview, setCurlPreview] = useState<string | null>(null);
   const [curlCopied, setCurlCopied] = useState(false);
   const [saveState, setSaveState] = useState("Save to collection");
@@ -55,7 +60,8 @@ export function TrafficView() {
     }
   }, []);
 
-  const refresh = useCallback(async () => {
+  const refresh = useCallback(async (silent = false) => {
+    if (!silent) setLoading(true);
     try {
       const sdkNeedle = sdkMetadataFilter.trim();
       const [baseResults, sdkFlowIds] = await Promise.all([
@@ -84,6 +90,8 @@ export function TrafficView() {
       setError(null);
     } catch (value) {
       setError(formatInvokeError(value));
+    } finally {
+      if (!silent) setLoading(false);
     }
   }, [methodFilter, sdkMetadataFilter, sessionFilter, sourceFilter, statusFilter, textFilter]);
 
@@ -95,14 +103,17 @@ export function TrafficView() {
   }, [refresh]);
 
   useEffect(() => {
-    const timer = window.setInterval(() => void refresh(), 1200);
+    const timer = window.setInterval(() => void refresh(true), 1200);
     return () => window.clearInterval(timer);
   }, [refresh]);
 
   useEffect(() => {
     if (!selectedFlowId) {
       setDetail(null);
+      setDetailLoading(false);
+      setDetailError(null);
       setSdkEnrichment(null);
+      setSdkError(null);
       setRequestBody(null);
       setResponseBody(null);
       return;
@@ -110,14 +121,27 @@ export function TrafficView() {
 
     let cancelled = false;
     async function loadDetail() {
+      setDetail(null);
+      setDetailLoading(true);
+      setDetailError(null);
+      setSdkError(null);
       try {
-        const [nextDetail, enrichment] = await Promise.all([
-          invoke<FlowDetail | null>("get_flow_detail", { flowId: selectedFlowId }),
-          invoke<FlowSdkEnrichment>("sdk_enrichment_for_flow", { flowId: selectedFlowId }),
-        ]);
+        const nextDetail = await invoke<FlowDetail | null>("get_flow_detail", { flowId: selectedFlowId });
         if (cancelled) return;
         setDetail(nextDetail);
-        setSdkEnrichment(enrichment);
+        if (nextDetail) {
+          try {
+            const enrichment = await invoke<FlowSdkEnrichment>("sdk_enrichment_for_flow", { flowId: selectedFlowId });
+            if (!cancelled) setSdkEnrichment(enrichment);
+          } catch (value) {
+            if (!cancelled) {
+              setSdkEnrichment(null);
+              setSdkError(formatInvokeError(value));
+            }
+          }
+        } else {
+          setSdkEnrichment(null);
+        }
         setCurlPreview(null);
         setCurlCopied(false);
         setSaveState("Save to collection");
@@ -133,13 +157,28 @@ export function TrafficView() {
           setResponseBody(response);
         }
       } catch (value) {
-        if (!cancelled) setError(formatInvokeError(value));
+        if (!cancelled) setDetailError(formatInvokeError(value));
+      } finally {
+        if (!cancelled) setDetailLoading(false);
       }
     }
 
     void loadDetail();
     return () => { cancelled = true; };
-  }, [selectedFlowId]);
+  }, [selectedFlowId, detailRetry]);
+
+  const hasActiveFilters = Boolean(textFilter.trim() || sdkMetadataFilter.trim())
+    || methodFilter !== "all" || statusFilter !== "all"
+    || sourceFilter !== "all" || sessionFilter !== "all";
+
+  function clearFilters() {
+    setTextFilter("");
+    setSdkMetadataFilter("");
+    setMethodFilter("all");
+    setStatusFilter("all");
+    setSourceFilter("all");
+    setSessionFilter("all");
+  }
 
   const selectedSearchResult = useMemo(
     () => results.find((item) => item.flow.id === selectedFlowId) ?? null,
@@ -208,28 +247,28 @@ export function TrafficView() {
         <div className="panel-heading">
           <div>
             <strong>Traffic search</strong>
-            <span>{results.length} matches · network + app-aware filters · live refresh</span>
+            <span>{loading ? "Searching traffic…" : `${results.length.toLocaleString()} matching flows`} · live refresh</span>
           </div>
           <button className="secondary compact" onClick={() => void Promise.all([refresh(), refreshMetadata()])}>Refresh</button>
         </div>
 
-        <div className="traffic-filters traffic-filters-advanced sdk-aware-filters">
-          <input className="text-input" value={textFilter} onChange={(event) => setTextFilter(event.target.value)} placeholder="Network: host, path, endpoint, session" />
-          <input className="text-input" value={sdkMetadataFilter} onChange={(event) => setSdkMetadataFilter(event.target.value)} placeholder="App context: screen, feature, source" />
-          <select value={sessionFilter} onChange={(event) => setSessionFilter(event.target.value)}>
+        <div className="traffic-search"><input className="text-input" aria-label="Search network traffic" value={textFilter} onChange={(event) => setTextFilter(event.target.value)} placeholder="Search host, path, or endpoint" /></div>
+        <details className="traffic-filter-details"><summary>More filters</summary><div className="traffic-filters traffic-filters-advanced sdk-aware-filters">
+          <input className="text-input" aria-label="Filter app context" value={sdkMetadataFilter} onChange={(event) => setSdkMetadataFilter(event.target.value)} placeholder="App context: screen, feature, source" />
+          <select aria-label="Filter session" value={sessionFilter} onChange={(event) => setSessionFilter(event.target.value)}>
             <option value="all">All sessions</option>
             {sessions.map((session) => <option key={session.id} value={session.id}>{session.name}</option>)}
           </select>
-          <select value={methodFilter} onChange={(event) => setMethodFilter(event.target.value)}>
+          <select aria-label="Filter method" value={methodFilter} onChange={(event) => setMethodFilter(event.target.value)}>
             {METHODS.map((method) => <option key={method} value={method}>{method === "all" ? "All methods" : method}</option>)}
           </select>
-          <select value={sourceFilter} onChange={(event) => setSourceFilter(event.target.value as "all" | FlowSource)}>
+          <select aria-label="Filter source" value={sourceFilter} onChange={(event) => setSourceFilter(event.target.value as "all" | FlowSource)}>
             {SOURCES.map((source) => <option key={source} value={source}>{source === "all" ? "All sources" : source}</option>)}
           </select>
-          <select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value as StatusFilter)}>
+          <select aria-label="Filter status" value={statusFilter} onChange={(event) => setStatusFilter(event.target.value as StatusFilter)}>
             <option value="all">All statuses</option><option value="2xx">2xx</option><option value="3xx">3xx</option><option value="4xx">4xx</option><option value="5xx">5xx</option>
           </select>
-        </div>
+        </div></details>
 
         {error ? <div className="error-banner">{error}</div> : null}
 
@@ -243,20 +282,25 @@ export function TrafficView() {
               <span>{flow.durationMs != null ? `${flow.durationMs} ms` : "—"}</span>
             </button>
           ))}
-          {results.length === 0 ? <p className="empty-state">No stored flows match these network/app-context filters.</p> : null}
+          {!loading && results.length === 0 ? <div className="empty-state flow-empty">
+            <p>{hasActiveFilters ? "No flows match these filters." : "No traffic yet. Connect a runtime and send a request to see it here."}</p>
+            <button className="secondary compact" onClick={hasActiveFilters ? clearFilters : onOpenConnect}>{hasActiveFilters ? "Clear filters" : "Open Connect"}</button>
+          </div> : null}
+          {loading && results.length === 0 ? <p className="empty-state" role="status">Loading captured traffic…</p> : null}
         </div>
       </div>
 
       <div className="inspector panel">
         <div className="panel-heading inspector-heading">
-          <div><strong>Inspector</strong><span>{detail?.request?.url ?? "Select a captured flow"}</span></div>
+          <div><strong>Inspector</strong><span>{detail?.request?.url ?? (selectedFlowId ? "Selected flow" : "Select a captured flow")}</span></div>
           {detail?.request ? <div className="inspector-actions"><button className="secondary compact" onClick={() => void copyCurl()}>{curlCopied ? "Copied cURL" : "Copy safe cURL"}</button>{detail.response ? <><button className="secondary compact" onClick={() => void createFixture()}>{fixtureState}</button><button className="primary compact" onClick={() => void createMock()}>{mockState}</button></> : null}</div> : null}
         </div>
 
         {detail ? (
           <div className="inspector-scroll">
             <InspectorSummary detail={detail} sessionName={selectedSearchResult?.sessionName ?? null} endpointKey={selectedSearchResult?.endpoint.key ?? null} />
-            <SdkEnrichmentSection enrichment={sdkEnrichment} />
+            {sdkError ? <section className="inspector-section" role="alert"><h3>App context</h3><p className="muted-copy">App context could not load: {sdkError}</p></section>
+              : <SdkEnrichmentSection enrichment={sdkEnrichment} />}
             {collections.length > 0 ? <section className="inspector-section collection-save-panel"><h3>Save request</h3><div className="collection-save-row"><select value={collectionId} onChange={(event) => setCollectionId(event.target.value)}>{collections.map((collection) => <option key={collection.id} value={collection.id}>{collection.name}</option>)}</select><button className="primary compact" onClick={() => void saveToCollection()}>{saveState}</button></div></section> : <section className="inspector-section"><h3>Save request</h3><p className="muted-copy">Create a collection in Workspace to save this request.</p></section>}
             <InspectorHeaders title="Request headers" headers={detail.request?.headers ?? []} />
             <InspectorBody title="Request body" bodyRef={detail.request?.body ?? null} payload={requestBody} />
@@ -265,7 +309,10 @@ export function TrafficView() {
             <InspectorTiming detail={detail} />
             {curlPreview ? <section className="inspector-section"><h3>Safe cURL</h3><pre>{curlPreview}</pre></section> : null}
           </div>
-        ) : <p className="empty-state">No full detail is available for this flow yet.</p>}
+        ) : detailError ? <div className="empty-state flow-empty" role="alert"><p>Could not load this flow: {detailError}</p><button className="secondary compact" onClick={() => setDetailRetry((current) => current + 1)}>Retry details</button></div>
+          : detailLoading ? <p className="empty-state" role="status">Loading flow details…</p>
+            : selectedFlowId ? <p className="empty-state">This flow has a summary, but no request or response detail was saved.</p>
+              : <p className="empty-state">Nothing to inspect yet.</p>}
       </div>
     </section>
   );
@@ -273,7 +320,7 @@ export function TrafficView() {
 
 function SdkEnrichmentSection({ enrichment }: { enrichment: FlowSdkEnrichment | null }) {
   if (!enrichment?.requestId) {
-    return <section className="inspector-section"><h3>App context</h3><p className="muted-copy">Proxy-only flow. No Mobile API Studio SDK correlation metadata was attached to this request.</p></section>;
+    return <section className="inspector-section"><h3>App context</h3><p className="muted-copy">No Mobile API Studio SDK correlation metadata was attached to this request.</p></section>;
   }
 
   const networkEvents = enrichment.requestEvents.filter((event) => event.event.type === "network");
