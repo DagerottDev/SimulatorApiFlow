@@ -699,10 +699,8 @@ mod certificate_wait_tests {
                     .duration_since(UNIX_EPOCH)
                     .unwrap()
                     .as_nanos();
-                let directory = std::env::temp_dir().join(format!(
-                    "mas-ca-wait-{}-{suffix}",
-                    std::process::id()
-                ));
+                let directory = std::env::temp_dir()
+                    .join(format!("mas-ca-wait-{}-{suffix}", std::process::id()));
                 fs::create_dir_all(&directory).unwrap();
                 let certificate = directory.join("mitmproxy-ca-cert.pem");
                 let delayed_certificate = certificate.clone();
