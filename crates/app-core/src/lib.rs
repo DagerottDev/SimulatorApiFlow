@@ -1,4 +1,5 @@
 mod ai_commands;
+mod atomic_file;
 mod breakpoint_commands;
 mod compare_commands;
 mod fixture_commands;

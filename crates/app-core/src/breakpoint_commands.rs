@@ -1,4 +1,4 @@
-use super::AppState;
+use super::{atomic_file, AppState};
 use crate::State;
 use core_model::AppError;
 use serde::{Deserialize, Serialize};
@@ -222,9 +222,10 @@ fn decision_directory(state: &State<'_, AppState>) -> PathBuf {
 }
 
 fn atomic_write(path: &Path, bytes: &[u8]) -> Result<(), AppError> {
-    let temporary = path.with_extension("json.tmp");
-    fs::write(&temporary, bytes).map_err(io_error)?;
-    fs::rename(&temporary, path).map_err(io_error)
+    atomic_file::write(path, bytes).map_err(|error| match error {
+        atomic_file::AtomicWriteError::Write(error)
+        | atomic_file::AtomicWriteError::Publish(error) => io_error(error),
+    })
 }
 
 fn safe_id(value: &str) -> String {

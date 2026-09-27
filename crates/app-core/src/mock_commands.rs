@@ -1,4 +1,4 @@
-use super::{now_epoch_millis, AppState};
+use super::{atomic_file, now_epoch_millis, AppState};
 use crate::State;
 use base64::{engine::general_purpose::STANDARD as BASE64, Engine as _};
 use core_model::AppError;
@@ -171,11 +171,12 @@ fn publish_rules(state: &State<'_, AppState>, rules: Vec<MockRule>) -> Result<()
 }
 
 fn atomic_write(path: &Path, bytes: &[u8]) -> Result<(), AppError> {
-    let temporary = path.with_extension("json.tmp");
-    fs::write(&temporary, bytes)
-        .map_err(|error| AppError::new("mock_rules_write_failed", error.to_string(), true))?;
-    fs::rename(&temporary, path)
-        .map_err(|error| AppError::new("mock_rules_publish_failed", error.to_string(), true))
+    atomic_file::write(path, bytes).map_err(|error| match error {
+        atomic_file::AtomicWriteError::Write(error) =>
+            AppError::new("mock_rules_write_failed", error.to_string(), true),
+        atomic_file::AtomicWriteError::Publish(error) =>
+            AppError::new("mock_rules_publish_failed", error.to_string(), true),
+    })
 }
 
 fn validate_rule(rule: &MockRule) -> Result<(), AppError> {
