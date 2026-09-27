@@ -269,6 +269,7 @@ captured/saved request
 ```
 
 This lets Replay work as an API-development surface even when no capture session is active.
+Replay follows redirects within the request's origin and returns a cross-origin redirect response without forwarding captured credentials to the new host.
 
 ## 9. Mock and breakpoint architecture
 

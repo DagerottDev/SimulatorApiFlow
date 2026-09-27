@@ -53,6 +53,16 @@ async fn handle_connection(
 ) -> Result<(), SdkTransportError> {
     let request = read_request(&mut stream).await?;
 
+    if !request.host_is_local || request.has_origin {
+        return write_response(
+            &mut stream,
+            403,
+            "Forbidden",
+            br#"{"error":"invalid_origin"}"#,
+        )
+        .await;
+    }
+
     if request.method == "GET" && request.path == SDK_HEALTH_PATH {
         return write_response(&mut stream, 200, "OK", br#"{"status":"ok"}"#).await;
     }
@@ -95,6 +105,8 @@ struct HttpRequest {
     method: String,
     path: String,
     body: Vec<u8>,
+    host_is_local: bool,
+    has_origin: bool,
 }
 
 async fn read_request(stream: &mut TcpStream) -> Result<HttpRequest, SdkTransportError> {
@@ -140,8 +152,21 @@ async fn read_request(stream: &mut TcpStream) -> Result<HttpRequest, SdkTranspor
     let path = raw_path.split('?').next().unwrap_or(raw_path).to_string();
 
     let mut content_length = 0usize;
+    let mut host = None;
+    let mut duplicate_host = false;
+    let mut has_origin = false;
     for line in lines {
         let Some((name, value)) = line.split_once(':') else { continue };
+        if name.trim().eq_ignore_ascii_case("host") {
+            if host.is_some() {
+                duplicate_host = true;
+            } else {
+                host = Some(value.trim().to_ascii_lowercase());
+            }
+        }
+        if name.trim().eq_ignore_ascii_case("origin") {
+            has_origin = true;
+        }
         if name.trim().eq_ignore_ascii_case("content-length") {
             content_length = value.trim().parse::<usize>().map_err(|error| {
                 SdkTransportError::new("sdk_http_content_length_invalid", error.to_string())
@@ -173,6 +198,11 @@ async fn read_request(stream: &mut TcpStream) -> Result<HttpRequest, SdkTranspor
         method,
         path,
         body: buffer[body_start..body_start + content_length].to_vec(),
+        host_is_local: !duplicate_host && matches!(
+            host.as_deref(),
+            Some("127.0.0.1:8182" | "localhost:8182" | "10.0.2.2:8182")
+        ),
+        has_origin,
     })
 }
 

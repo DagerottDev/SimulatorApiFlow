@@ -136,6 +136,7 @@ selected comparison/flow
  -> sensitive-header redaction
  -> internal-header omission
  -> configurable JSON/query secret-key redaction
+ -> form-encoded body secret-key redaction
  -> body/string/context limits
  -> exact context preview
  -> SHA-256 context fingerprint
@@ -181,7 +182,7 @@ Android Emulator host routing can require the capture proxy to be reachable from
 
 ### SDK telemetry
 
-The desktop SDK ingestion listener binds to host loopback. Android Emulator reaches that loopback through `10.0.2.2`; it is not intended as a LAN telemetry service.
+The desktop SDK ingestion listener binds to host loopback. Android Emulator reaches that loopback through `10.0.2.2`; it is not intended as a LAN telemetry service. The listener accepts the documented loopback Host values and rejects requests carrying an Origin header, so a web page cannot submit SDK events through a cross-origin browser request. Native SDK clients do not set Origin.
 
 Control/SDK interfaces should not become unauthenticated general LAN APIs.
 

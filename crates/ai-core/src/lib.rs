@@ -221,8 +221,28 @@ fn redact_value(
             if looks_like_named_difference(object) {
                 return redact_named_difference(object, policy, secret_keys, redactions);
             }
+            let form_body = object
+                .get("contentType")
+                .and_then(Value::as_str)
+                .is_some_and(|value| {
+                    value.split(';').next().is_some_and(|type_name| {
+                        type_name.trim().eq_ignore_ascii_case("application/x-www-form-urlencoded")
+                    })
+                });
             let mut next = Map::new();
             for (key, child) in object {
+                if form_body && key == "text" {
+                    if let Some(text) = child.as_str() {
+                        next.insert(
+                            key.clone(),
+                            Value::String(truncate_string(
+                                &redact_query(text, secret_keys, redactions),
+                                policy.max_string_chars,
+                            )),
+                        );
+                        continue;
+                    }
+                }
                 let normalized_key = normalize_secret_key(key);
                 if secret_keys.contains(&normalized_key) {
                     *redactions += 1;
@@ -362,7 +382,11 @@ fn redact_query(value: &str, secret_keys: &HashSet<String>, redactions: &mut usi
         .split('&')
         .map(|pair| {
             let (key, value) = pair.split_once('=').unwrap_or((pair, ""));
-            if secret_keys.contains(&normalize_secret_key(key)) {
+            let decoded_key = url::form_urlencoded::parse(pair.as_bytes())
+                .next()
+                .map(|(key, _)| key.into_owned())
+                .unwrap_or_else(|| key.to_string());
+            if secret_keys.contains(&normalize_secret_key(&decoded_key)) {
                 *redactions += 1;
                 format!("{key}=<redacted>")
             } else if pair.contains('=') {
@@ -381,6 +405,26 @@ fn normalize_secret_key(key: &str) -> String {
         .chars()
         .map(|character| if matches!(character, '-' | ' ' | '.') { '_' } else { character })
         .collect()
+}
+
+#[cfg(test)]
+mod security_tests {
+    use super::*;
+
+    #[test]
+    fn form_body_secret_keys_are_redacted_in_the_exact_preview_payload() {
+        let context = json!({
+            "requestBody": {
+                "contentType": "application/x-www-form-urlencoded; charset=utf-8",
+                "text": "user=ada&pass%77ord=hidden-value&token=other-secret"
+            }
+        });
+        let preview = build_context_preview(&context, &AiContextPolicy::default()).unwrap();
+        assert!(!preview.json.contains("hidden-value"));
+        assert!(!preview.json.contains("other-secret"));
+        assert!(preview.json.contains("user=ada"));
+        assert_eq!(preview.redaction_count, 2);
+    }
 }
 
 fn truncate_string(value: &str, max_chars: usize) -> String {
