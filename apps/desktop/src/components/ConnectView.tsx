@@ -19,7 +19,7 @@ const disconnected: ConnectionSnapshot = {
   proxyPort: null,
 };
 
-export function ConnectView({ onOpenTraffic }: { onOpenTraffic: () => void }) {
+export function ConnectView({ onOpenTraffic, sharedConnection }: { onOpenTraffic: () => void; sharedConnection: ConnectionSnapshot | null }) {
   const [payload, setPayload] = useState<DeviceDiscoveryPayload>({ devices: [], diagnostics: [] });
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [connection, setConnection] = useState<ConnectionSnapshot>(disconnected);
@@ -64,6 +64,13 @@ export function ConnectView({ onOpenTraffic }: { onOpenTraffic: () => void }) {
   useEffect(() => {
     void refresh();
   }, [refresh]);
+
+  // Follow new server snapshots without replaying a pre-action snapshot when acting ends.
+  useEffect(() => {
+    if (acting || !sharedConnection) return;
+    setConnection(sharedConnection);
+    if (!sharedConnection.connected) setConnectionDiagnostics([]);
+  }, [sharedConnection]);
 
   const selected = useMemo(
     () => payload.devices.find((device) => device.id === selectedId) ?? null,

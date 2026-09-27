@@ -133,7 +133,7 @@ function App() {
           </div>
         </header>
 
-        {route === "Connect" ? <ConnectView onOpenTraffic={() => navigate("Traffic")} /> : null}
+        {route === "Connect" ? <ConnectView onOpenTraffic={() => navigate("Traffic")} sharedConnection={connection} /> : null}
         {route === "Traffic" ? <TrafficView onOpenConnect={() => navigate("Connect")} /> : null}
         {route === "Replay" ? <ReplayView savedRequestId={replaySavedRequestId} /> : null}
         {route === "Mocks" ? <div className="mocks-page-stack"><MocksView /><MockUtilitiesView /></div> : null}
