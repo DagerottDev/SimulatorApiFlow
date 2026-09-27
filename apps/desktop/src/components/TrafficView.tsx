@@ -18,13 +18,14 @@ type StatusFilter = "all" | "2xx" | "3xx" | "4xx" | "5xx";
 const METHODS = ["all", "GET", "POST", "PUT", "PATCH", "DELETE", "HEAD", "OPTIONS"];
 const SOURCES: Array<"all" | FlowSource> = ["all", "proxy", "replay", "mock", "sdk", "fixture"];
 
-export function TrafficView() {
+export function TrafficView({ onOpenConnect }: { onOpenConnect: () => void }) {
   const [results, setResults] = useState<TrafficSearchResult[]>([]);
   const [sessions, setSessions] = useState<CaptureSession[]>([]);
   const [collections, setCollections] = useState<SavedCollection[]>([]);
   const [selectedFlowId, setSelectedFlowId] = useState<string | null>(null);
   const [detail, setDetail] = useState<FlowDetail | null>(null);
   const [sdkEnrichment, setSdkEnrichment] = useState<FlowSdkEnrichment | null>(null);
+  const [sdkError, setSdkError] = useState<string | null>(null);
   const [requestBody, setRequestBody] = useState<BodyPayload | null>(null);
   const [responseBody, setResponseBody] = useState<BodyPayload | null>(null);
   const [textFilter, setTextFilter] = useState("");
@@ -36,6 +37,9 @@ export function TrafficView() {
   const [collectionId, setCollectionId] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [detailLoading, setDetailLoading] = useState(false);
+  const [detailError, setDetailError] = useState<string | null>(null);
+  const [detailRetry, setDetailRetry] = useState(0);
   const [curlPreview, setCurlPreview] = useState<string | null>(null);
   const [curlCopied, setCurlCopied] = useState(false);
   const [saveState, setSaveState] = useState("Save to collection");
@@ -56,8 +60,8 @@ export function TrafficView() {
     }
   }, []);
 
-  const refresh = useCallback(async () => {
-    setLoading(true);
+  const refresh = useCallback(async (silent = false) => {
+    if (!silent) setLoading(true);
     try {
       const sdkNeedle = sdkMetadataFilter.trim();
       const [baseResults, sdkFlowIds] = await Promise.all([
@@ -87,7 +91,7 @@ export function TrafficView() {
     } catch (value) {
       setError(formatInvokeError(value));
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   }, [methodFilter, sdkMetadataFilter, sessionFilter, sourceFilter, statusFilter, textFilter]);
 
@@ -99,14 +103,17 @@ export function TrafficView() {
   }, [refresh]);
 
   useEffect(() => {
-    const timer = window.setInterval(() => void refresh(), 1200);
+    const timer = window.setInterval(() => void refresh(true), 1200);
     return () => window.clearInterval(timer);
   }, [refresh]);
 
   useEffect(() => {
     if (!selectedFlowId) {
       setDetail(null);
+      setDetailLoading(false);
+      setDetailError(null);
       setSdkEnrichment(null);
+      setSdkError(null);
       setRequestBody(null);
       setResponseBody(null);
       return;
@@ -114,14 +121,27 @@ export function TrafficView() {
 
     let cancelled = false;
     async function loadDetail() {
+      setDetail(null);
+      setDetailLoading(true);
+      setDetailError(null);
+      setSdkError(null);
       try {
-        const [nextDetail, enrichment] = await Promise.all([
-          invoke<FlowDetail | null>("get_flow_detail", { flowId: selectedFlowId }),
-          invoke<FlowSdkEnrichment>("sdk_enrichment_for_flow", { flowId: selectedFlowId }),
-        ]);
+        const nextDetail = await invoke<FlowDetail | null>("get_flow_detail", { flowId: selectedFlowId });
         if (cancelled) return;
         setDetail(nextDetail);
-        setSdkEnrichment(enrichment);
+        if (nextDetail) {
+          try {
+            const enrichment = await invoke<FlowSdkEnrichment>("sdk_enrichment_for_flow", { flowId: selectedFlowId });
+            if (!cancelled) setSdkEnrichment(enrichment);
+          } catch (value) {
+            if (!cancelled) {
+              setSdkEnrichment(null);
+              setSdkError(formatInvokeError(value));
+            }
+          }
+        } else {
+          setSdkEnrichment(null);
+        }
         setCurlPreview(null);
         setCurlCopied(false);
         setSaveState("Save to collection");
@@ -137,13 +157,28 @@ export function TrafficView() {
           setResponseBody(response);
         }
       } catch (value) {
-        if (!cancelled) setError(formatInvokeError(value));
+        if (!cancelled) setDetailError(formatInvokeError(value));
+      } finally {
+        if (!cancelled) setDetailLoading(false);
       }
     }
 
     void loadDetail();
     return () => { cancelled = true; };
-  }, [selectedFlowId]);
+  }, [selectedFlowId, detailRetry]);
+
+  const hasActiveFilters = Boolean(textFilter.trim() || sdkMetadataFilter.trim())
+    || methodFilter !== "all" || statusFilter !== "all"
+    || sourceFilter !== "all" || sessionFilter !== "all";
+
+  function clearFilters() {
+    setTextFilter("");
+    setSdkMetadataFilter("");
+    setMethodFilter("all");
+    setStatusFilter("all");
+    setSourceFilter("all");
+    setSessionFilter("all");
+  }
 
   const selectedSearchResult = useMemo(
     () => results.find((item) => item.flow.id === selectedFlowId) ?? null,
@@ -247,21 +282,25 @@ export function TrafficView() {
               <span>{flow.durationMs != null ? `${flow.durationMs} ms` : "—"}</span>
             </button>
           ))}
-          {!loading && results.length === 0 ? <p className="empty-state">No traffic matches. Start a capture in Connect, or clear the filters to see stored flows.</p> : null}
+          {!loading && results.length === 0 ? <div className="empty-state flow-empty">
+            <p>{hasActiveFilters ? "No flows match these filters." : "No traffic yet. Connect a runtime and send a request to see it here."}</p>
+            <button className="secondary compact" onClick={hasActiveFilters ? clearFilters : onOpenConnect}>{hasActiveFilters ? "Clear filters" : "Open Connect"}</button>
+          </div> : null}
           {loading && results.length === 0 ? <p className="empty-state" role="status">Loading captured traffic…</p> : null}
         </div>
       </div>
 
       <div className="inspector panel">
         <div className="panel-heading inspector-heading">
-          <div><strong>Inspector</strong><span>{detail?.request?.url ?? "Select a captured flow"}</span></div>
+          <div><strong>Inspector</strong><span>{detail?.request?.url ?? (selectedFlowId ? "Selected flow" : "Select a captured flow")}</span></div>
           {detail?.request ? <div className="inspector-actions"><button className="secondary compact" onClick={() => void copyCurl()}>{curlCopied ? "Copied cURL" : "Copy safe cURL"}</button>{detail.response ? <><button className="secondary compact" onClick={() => void createFixture()}>{fixtureState}</button><button className="primary compact" onClick={() => void createMock()}>{mockState}</button></> : null}</div> : null}
         </div>
 
         {detail ? (
           <div className="inspector-scroll">
             <InspectorSummary detail={detail} sessionName={selectedSearchResult?.sessionName ?? null} endpointKey={selectedSearchResult?.endpoint.key ?? null} />
-            <SdkEnrichmentSection enrichment={sdkEnrichment} />
+            {sdkError ? <section className="inspector-section" role="alert"><h3>App context</h3><p className="muted-copy">App context could not load: {sdkError}</p></section>
+              : <SdkEnrichmentSection enrichment={sdkEnrichment} />}
             {collections.length > 0 ? <section className="inspector-section collection-save-panel"><h3>Save request</h3><div className="collection-save-row"><select value={collectionId} onChange={(event) => setCollectionId(event.target.value)}>{collections.map((collection) => <option key={collection.id} value={collection.id}>{collection.name}</option>)}</select><button className="primary compact" onClick={() => void saveToCollection()}>{saveState}</button></div></section> : <section className="inspector-section"><h3>Save request</h3><p className="muted-copy">Create a collection in Workspace to save this request.</p></section>}
             <InspectorHeaders title="Request headers" headers={detail.request?.headers ?? []} />
             <InspectorBody title="Request body" bodyRef={detail.request?.body ?? null} payload={requestBody} />
@@ -270,7 +309,10 @@ export function TrafficView() {
             <InspectorTiming detail={detail} />
             {curlPreview ? <section className="inspector-section"><h3>Safe cURL</h3><pre>{curlPreview}</pre></section> : null}
           </div>
-        ) : <p className="empty-state">No full detail is available for this flow yet.</p>}
+        ) : detailError ? <div className="empty-state flow-empty" role="alert"><p>Could not load this flow: {detailError}</p><button className="secondary compact" onClick={() => setDetailRetry((current) => current + 1)}>Retry details</button></div>
+          : detailLoading ? <p className="empty-state" role="status">Loading flow details…</p>
+            : selectedFlowId ? <p className="empty-state">This flow has a summary, but no request or response detail was saved.</p>
+              : <p className="empty-state">Nothing to inspect yet.</p>}
       </div>
     </section>
   );
@@ -278,7 +320,7 @@ export function TrafficView() {
 
 function SdkEnrichmentSection({ enrichment }: { enrichment: FlowSdkEnrichment | null }) {
   if (!enrichment?.requestId) {
-    return <section className="inspector-section"><h3>App context</h3><p className="muted-copy">Proxy-only flow. No Mobile API Studio SDK correlation metadata was attached to this request.</p></section>;
+    return <section className="inspector-section"><h3>App context</h3><p className="muted-copy">No Mobile API Studio SDK correlation metadata was attached to this request.</p></section>;
   }
 
   const networkEvents = enrichment.requestEvents.filter((event) => event.event.type === "network");

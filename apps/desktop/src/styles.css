@@ -82,6 +82,7 @@ nav { display: grid; gap: 6px; }
 .detail-grid dt { color: var(--muted); }
 .detail-grid dd { margin: 0; overflow-wrap: anywhere; color: var(--ink); }
 .empty-state { color: var(--muted); padding: 18px; line-height: 1.6; }
+.flow-empty p { margin: 0 0 12px; }
 .placeholder { padding: 42px; max-width: 800px; }
 .placeholder .eyebrow { color: var(--muted); text-transform: uppercase; font-size: 11px; letter-spacing: .1em; }
 .placeholder h2 { max-width: 620px; font-size: 26px; margin: 14px 0 10px; }
