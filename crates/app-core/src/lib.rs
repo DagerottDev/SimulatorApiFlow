@@ -5,6 +5,7 @@ mod compare_commands;
 mod fixture_commands;
 mod inspect;
 mod mock_commands;
+mod proxy_rule_commands;
 mod replay_commands;
 mod sdk_commands;
 mod settings_commands;

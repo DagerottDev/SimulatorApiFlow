@@ -15,6 +15,11 @@ fn output<T: serde::Serialize>(value: T) -> Result<Value, AppError> {
 
 pub async fn invoke(command: &str, args: Value, state: &AppState) -> Result<Value, AppError> {
     match command {
+        "preview_proxy_rule" => {
+            let rule = input(&args, "rule")?;
+            let request = input(&args, "request")?;
+            output(crate::proxy_rule_commands::preview_proxy_rule(rule, request)?)
+        }
         "ai_settings" => output(crate::ai_commands::ai_settings(State(state))?),
         "set_ai_settings" => {
             let input = input(&args, "input")?;
