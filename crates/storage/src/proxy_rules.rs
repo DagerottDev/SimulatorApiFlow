@@ -54,6 +54,26 @@ impl Database {
         self.connection()?.execute("DELETE FROM proxy_rules WHERE id = ?1", [id])?;
         Ok(())
     }
+
+    pub fn disable_all_proxy_rules(&self) -> Result<usize, StorageError> {
+        let mut connection = self.connection()?;
+        let transaction = connection.transaction()?;
+        let rules = {
+            let mut statement = transaction.prepare("SELECT rule_json FROM proxy_rules WHERE enabled != 0")?;
+            statement.query_map([], |row| row.get::<_, String>(0))?
+                .collect::<Result<Vec<_>, _>>()?
+        };
+        for json in &rules {
+            let mut rule: ProxyRule = serde_json::from_str(json)?;
+            rule.enabled = false;
+            transaction.execute(
+                "UPDATE proxy_rules SET enabled = 0, rule_json = ?2 WHERE id = ?1",
+                params![rule.id, serde_json::to_string(&rule)?],
+            )?;
+        }
+        transaction.commit()?;
+        Ok(rules.len())
+    }
 }
 
 #[cfg(test)]

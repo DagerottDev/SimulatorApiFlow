@@ -52,6 +52,7 @@ pub enum CaptureTargetKind {
     MacProcess { pid: u32, name: String },
     PhysicalIos { address: String, interface: String },
     PhysicalAndroid { address: String, interface: String },
+    ProxyListener { mode: CaptureModeKind, listen_port: u16 },
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
@@ -68,6 +69,10 @@ pub enum CaptureModeKind {
     RegularProxy,
     LocalAll,
     LocalProcess { pid: u32 },
+    ReverseProxy { url: String },
+    UpstreamProxy { url: String },
+    Socks5,
+    DnsProxy,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
@@ -217,6 +222,19 @@ pub struct FlowDetail {
     pub timing: Timing,
     pub error_code: Option<String>,
     pub error_message: Option<String>,
+    #[serde(default)]
+    pub proxy_rule_ids: Vec<String>,
+    #[serde(default)]
+    pub proxy_rule_changes: Vec<ProxyRuleChange>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub struct ProxyRuleChange {
+    pub rule_id: String,
+    pub field: String,
+    pub before: String,
+    pub after: String,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
