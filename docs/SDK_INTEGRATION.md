@@ -85,7 +85,7 @@ let session = URLSession(configuration: config)
 
 This installs the SDK's opt-in `URLProtocol`. When the SDK is disabled the configuration is returned unchanged.
 
-The protocol forwards requests with its own ephemeral `URLSession`. It does not inherit custom settings from the original session, including a per-session proxy. If your client needs custom session or network settings, use the manual request instrumentation below and call `complete` when the client finishes. The Simulator's system-wide proxy path for automatic integration still needs device validation.
+The protocol forwards requests with its own ephemeral `URLSession`. It does not inherit custom settings from the original session, including a per-session proxy. If your client needs custom session or network settings, use the manual request instrumentation below and call `complete` when the client finishes. Automatic instrumentation passed on the iOS Simulator through an explicit reverse HTTP endpoint. The Simulator's regular proxy path for automatic integration still needs device validation; see [the platform acceptance record](PLATFORM_ACCEPTANCE.md).
 
 ### Manual/custom networking integration
 
@@ -129,7 +129,13 @@ The Android library lives at:
 sdks/android/mobile-api-studio
 ```
 
-The repository Android SDK workspace includes the `:mobile-api-studio` library and `:sample` application modules.
+The repository Android SDK workspace includes the `:mobile-api-studio` library and `:sample` application modules. Its AGP 9.3.1 build requires JDK 21, Gradle 9.5 or newer, Android API 37 and Build Tools 36.0.0. With those installed and `ANDROID_HOME` pointing to the SDK:
+
+```sh
+gradle --project-dir sdks/android assembleDebug
+```
+
+No Gradle wrapper is committed.
 
 Configure the SDK from your app using a debug/internal-build condition:
 

@@ -17,15 +17,15 @@
 | Compare sessions | Find missing calls, payload and schema changes, retries, errors, and timing differences. |
 | Explain with AI | Preview locally redacted evidence before explicitly sending it to an optional provider. |
 
-Traffic and workspace data stay on your Mac by default. The optional AI flow makes an external request only after you preview the context and choose to send it. See [Security and privacy](docs/SECURITY_AND_PRIVACY.md) for the implemented boundaries and the validation still pending.
+Traffic and workspace data stay on your computer by default. The optional AI flow makes an external request only after you preview the context and choose to send it. See [Security and privacy](docs/SECURITY_AND_PRIVACY.md) for the implemented boundaries and the validation still pending.
 
 ## Build from source
 
-The verified source-build path is **macOS**. Windows and Linux portability code is present, but native builds and runtime validation remain open. See the [platform support matrix](docs/PLATFORM_SUPPORT.md).
+Source builds and local checks passed on **macOS** and **Linux ARM64 in Docker**. Windows cross-compiles, while native Windows runtime validation remains open. See the [platform support matrix](docs/PLATFORM_SUPPORT.md).
 
 Install:
 
-- Xcode Command Line Tools and a Rust toolchain compatible with the workspace `rust-version`;
+- Rust 1.88 or newer, plus Xcode Command Line Tools on macOS or C build tools, `pkg-config`, and `libdbus-1` development headers on Linux;
 - Node.js 20.19+ or 22.12+ and pnpm 10.15.0;
 - `mitmdump` from mitmproxy for capture;
 - Xcode and an iOS Simulator runtime for iOS work, or Android SDK Platform Tools and an Android Emulator for Android work.

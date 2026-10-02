@@ -17,13 +17,16 @@ Milestones 6–8 are integrated in the platform branch. Final macOS integration 
 
 Sharing is self-hosted and opt-in; no external deployment or real traffic upload occurred. Its HTTP/security checks and combined native preview/upload/TTL/revocation/role/CAS/atomic pull regression passed before the milestone-7 checkpoint and again against the final milestone-8 package.
 
+The subsequent owner-authorized acceptance run passed Linux ARM64 build/package/runtime checks in Docker, unlocked/unavailable Secret Service cases, and the complete Windows GNU cross-build. Computer use passed bounded Mac UI workflows and showed the completed iOS acceptance app. Simulator HTTPS and explicit reverse HTTP passed with manual SDK enrichment, internal correlation header removal, disabled SDK pass-through and disconnect. Automatic URLProtocol instrumentation also passed through the explicit reverse HTTP endpoint. The Android SDK/sample debug build passed after an observed one-line overload ambiguity fix. Rust 1.85 failed the locked dependency graph; Rust 1.88 passed and is now the declared minimum. See [PLATFORM_ACCEPTANCE.md](PLATFORM_ACCEPTANCE.md) for exact checks and limits.
+
 Remaining acceptance gates:
 
-1. Physical iOS/Android HTTP(S), selected-process capture and existing Simulator/Emulator workflows. The available Apple development entries were simulated and shut down; no connected physical device, booted Simulator or ADB environment was found.
-2. Native Windows and Linux runtime, credential-store sessions, Android integration, packaging and the full capture/replay/rule/import/export/recovery matrix. Isolated target checks passed for relevant platform modules; full builds require missing C toolchains/SDKs and the Linux D-Bus sysroot. Docker is not running. No platform release is claimed.
-3. Browser interaction and UI acceptance. Production builds and native/API checks passed; browser automation was blocked by tool security policy.
-4. Active-capture interrupted-start/forced-stop recovery and the remaining owner-led protocol, SDK-correlation and AI-redaction matrix. Idle service restart is verified and does not close active-device rollback gates.
-5. External hosting/TLS and release acceptance, if the owner elects to deploy sharing or distribute a platform build.
+1. Physical iOS/Android and Android Emulator acceptance. Apple development entries are simulated; no connected physical Apple device was found. Android SDK/sample compilation and packaging passed, but elevated ADB listed no attached devices; disposable-emulator feasibility is being checked.
+2. Native Windows runtime/credential storage and Linux host eBPF capture. Cross-compilation and Linux userspace Docker checks do not establish those results.
+3. Selected-process Mac capture: the owned synthetic client timed out during listener startup; a bounded direct mitmdump probe reported that macos-redirector exited. No privileged helper or security permission was installed or bypassed.
+4. Regular HTTP routing and automatic iOS URLProtocol integration through the regular Simulator proxy. Both per-session HTTP proxy variants bypassed loopback HTTP; a LAN fixture timed out. Explicit reverse HTTP and manually instrumented HTTPS passed. Custom-session limitations remain documented.
+5. The remaining full device/recovery/protocol/SDK/AI and UI acceptance matrix. Bounded local checks close only the cases recorded, not all owner-led validation.
+6. External sharing TLS/deployment and signed platform release acceptance, if the owner elects to deploy or distribute builds.
 
 Implementation Phases 0–5 remain historically implementation-complete without claiming they were formally tested. Source changes and partial local checks do not close the roadmap's release gates. Use latest verified Luna/Sol subagents, bounded validated Jev choices, and relevant deterministic checks. Preserve this checkpoint and the worktrees if the allowance is exhausted.
 
