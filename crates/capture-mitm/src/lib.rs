@@ -419,6 +419,7 @@ enum BridgeEvent {
         proxy_rule_changes: Vec<core_model::ProxyRuleChange>,
         protocol: Option<ProtocolDetails>,
     },
+    #[serde(rename = "websocket_message")]
     WebSocketMessage {
         id: String,
         flow_id: String,
@@ -431,6 +432,7 @@ enum BridgeEvent {
         injected: bool,
         body: Option<BridgeBody>,
     },
+    #[serde(rename = "websocket_closed")]
     WebSocketClosed {
         flow_id: String,
         close_code: Option<u16>,
@@ -890,6 +892,23 @@ fn now_epoch_millis() -> u128 {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn websocket_addon_events_reach_capture_subscribers() {
+        let (sender, mut receiver) = broadcast::channel(4);
+        let message = serde_json::from_str::<BridgeEvent>(r#"{"type":"websocket_message","id":"flow:1","flow_id":"flow","session_id":"check","sequence":1,"from_client":true,"opcode":1,"timestamp":"1","dropped":false,"injected":false,"body":{"data_base64":"aGk=","content_type":"text/plain","encoding":null,"is_binary":false,"is_truncated":false}}"#).unwrap();
+        publish_bridge_event(&sender, "check", message);
+        match receiver.try_recv().unwrap() {
+            CaptureEvent::WebSocketMessage(message) => {
+                assert_eq!(message.flow_id, "flow");
+                assert_eq!(message.body.unwrap().bytes, b"hi");
+            }
+            other => panic!("Expected WebSocket message, got {other:?}"),
+        }
+        let closed = serde_json::from_str::<BridgeEvent>(r#"{"type":"websocket_closed","flow_id":"flow","close_code":1000,"close_reason":"complete","closed_by_client":true}"#).unwrap();
+        publish_bridge_event(&sender, "check", closed);
+        assert!(matches!(receiver.try_recv().unwrap(), CaptureEvent::WebSocketClosed { close_code: Some(1000), closed_by_client: Some(true), .. }));
+    }
 
     #[test]
     #[cfg(unix)]
