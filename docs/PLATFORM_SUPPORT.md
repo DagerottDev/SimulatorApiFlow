@@ -4,7 +4,7 @@ Mobile API Studio is a source-built localhost service with a browser UI. It does
 
 | Host | Local service and browser UI | Secure environment storage | iOS Simulator | Android Emulator | Local CLI/MCP |
 | --- | --- | --- | --- | --- | --- |
-| macOS | Source build, localhost checks, and portable bundle exercised; owner-led device and release checks remain open | Keychain | HTTPS and explicit reverse HTTP passed with manual SDK enrichment; regular HTTP routing and automatic integration remain open | Requires Android Platform Tools and an emulator | Unix control socket |
+| macOS | Source build, localhost checks, and portable bundle exercised; owner-led device and release checks remain open | Keychain | HTTPS, explicitly configured non-loopback HTTP and reverse HTTP passed with manual SDK enrichment; automatic regular-proxy integration remains open | Requires Android Platform Tools and an emulator | Unix control socket |
 | Windows | Full GNU cross-build passed; native runtime and release are unverified | Windows Credential Manager | Not available | Intended through Android Platform Tools; unverified | Current-user named pipe |
 | Linux | ARM64 build, portable bundle and userspace runtime checks passed in Docker; host capture and release remain unverified | Unavailable sessions fail closed; an isolated unlocked GNOME Keyring session passed synthetic set/get/delete | Not available | Intended through Android Platform Tools; unverified | Unix control socket |
 
