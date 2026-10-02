@@ -1,6 +1,6 @@
 # Mobile API Studio
 
-**A local-first API debugger for iOS Simulators and Android Emulators.** Capture a request, inspect what happened, replay it, mock its response, and compare two sessions in a browser on the same Mac.
+**A local-first API debugger for iOS Simulators and Android Emulators.** Capture a request, inspect what happened, replay it, mock its response, and compare two sessions in a browser on your development computer.
 
 [Build from source](#build-from-source) · [How capture works](#how-capture-works) · [Contribute](CONTRIBUTING.md) · [Support the project](#support-the-project)
 
@@ -21,7 +21,7 @@ Traffic and workspace data stay on your Mac by default. The optional AI flow mak
 
 ## Build from source
 
-The first source-built target is **macOS**. The browser UI and Rust service run on the same Mac at `http://127.0.0.1:8180`. Other macOS versions and Intel builds have not been validated yet.
+The verified source-build path is **macOS**. Windows and Linux portability code is present, but native builds and runtime validation remain open. See the [platform support matrix](docs/PLATFORM_SUPPORT.md).
 
 Install:
 
@@ -39,9 +39,9 @@ pnpm install --frozen-lockfile
 
 The command builds the React UI, starts the Rust service, and opens the local URL. Pass `--port 8190` to use another UI port. Capture and SDK ingestion remain on `8181` and `8182`. Stop the service with Ctrl+C so it can end capture and restore an Android proxy. Keep the earlier desktop app closed while using the same data directory.
 
-Workspace data stays in `~/Library/Application Support/dev.mobileapistudio.desktop`. Back up `app.db` before any future schema migration. Browser import uses a selected JSON file; export downloads a redacted workspace bundle. The service listens only on `127.0.0.1`, checks Host and Origin, and requires a process-lifetime token for commands. The token is held in browser memory, outside URLs and logs.
+Workspace data stays in the operating system data directory listed in the [platform support matrix](docs/PLATFORM_SUPPORT.md). Back up `app.db` before any future schema migration. Browser import uses a selected JSON file; export downloads a redacted workspace bundle. The service listens only on `127.0.0.1`, checks Host and Origin, and requires a process-lifetime token for commands. The token is held in browser memory, outside URLs and logs.
 
-`mitmdump` is installed separately. The service uses the Python bridge in this repository and can discover a standard Homebrew install or use the absolute path set in Settings. Read [macOS release preparation](docs/MACOS_RELEASE.md) for the validation gates.
+`mitmdump` is installed separately. The service uses the Python bridge in this repository and can discover a standard Homebrew install or use the absolute path set in Settings. Read [platform support](docs/PLATFORM_SUPPORT.md) for host requirements and [macOS release preparation](docs/MACOS_RELEASE.md) for the remaining validation gates.
 
 ## How capture works
 

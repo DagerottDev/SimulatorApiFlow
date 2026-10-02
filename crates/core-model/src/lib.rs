@@ -49,7 +49,9 @@ pub struct CaptureTarget {
 pub enum CaptureTargetKind {
     IosSimulator { device_id: String },
     AndroidEmulator { device_id: String },
+    #[serde(alias = "desktop_all")]
     MacAll,
+    #[serde(alias = "desktop_process")]
     MacProcess { pid: u32, name: String },
     PhysicalIos { address: String, interface: String },
     PhysicalAndroid { address: String, interface: String },

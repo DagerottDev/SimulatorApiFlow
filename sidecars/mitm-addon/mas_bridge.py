@@ -22,6 +22,9 @@ BREAKPOINT_TIMEOUT_MS = int(os.environ.get("MAS_BREAKPOINT_TIMEOUT_MS", "60000")
 BREAKPOINT_POLL_MS = max(25, int(os.environ.get("MAS_BREAKPOINT_POLL_MS", "100")))
 SDK_CORRELATION_HEADER = "X-Mobile-API-Studio-Request-Id"
 RULE_SOCKET = os.environ.get("MAS_RULE_SOCKET")
+RULE_TCP_PORT = os.environ.get("MAS_RULE_TCP_PORT")
+RULE_TCP_TOKEN = os.environ.get("MAS_RULE_TCP_TOKEN")
+MAX_RULE_REQUEST_BYTES = 8 * 1024
 _RULES_MTIME_NS: int | None = None
 _RULES_DOCUMENT: dict = {"enabled": True, "rules": []}
 _TLS_POLICIES = weakref.WeakKeyDictionary()
@@ -291,24 +294,48 @@ async def _proxy_rules(flow: http.HTTPFlow) -> list[dict]:
     return await _proxy_rules_for(request.method, request.pretty_host or request.host, urlsplit(request.url).path or "/")
 
 
-async def _proxy_rules_for(method: str, host: str, path: str) -> list[dict]:
-    if not RULE_SOCKET:
-        return []
-    payload = {"method": method, "host": host, "path": path}
-    reader, writer = await asyncio.wait_for(asyncio.open_unix_connection(RULE_SOCKET, limit=MAX_RULE_RESPONSE_BYTES), 2)
+def _rule_service_available() -> bool:
+    return bool(RULE_TCP_PORT or RULE_TCP_TOKEN) if os.name == "nt" else bool(RULE_SOCKET)
+
+
+async def _rule_document(payload: dict) -> dict:
+    payload = dict(payload)
+    if os.name == "nt":
+        if not RULE_TCP_PORT or not RULE_TCP_TOKEN or len(RULE_TCP_TOKEN) != 64 or any(char not in "0123456789abcdef" for char in RULE_TCP_TOKEN):
+            raise ValueError("Private rule transport configuration is invalid")
+        port = int(RULE_TCP_PORT)
+        if not 1 <= port <= 65535:
+            raise ValueError("Private rule transport port is invalid")
+        payload["token"] = RULE_TCP_TOKEN
+    encoded = json.dumps(payload, separators=(",", ":")).encode("utf-8") + b"\n"
+    if len(encoded) > MAX_RULE_REQUEST_BYTES:
+        raise ValueError("Rule lookup request exceeds 8 KiB")
+    if os.name == "nt":
+        reader, writer = await asyncio.wait_for(asyncio.open_connection("127.0.0.1", port, limit=MAX_RULE_RESPONSE_BYTES), 2)
+    else:
+        reader, writer = await asyncio.wait_for(asyncio.open_unix_connection(RULE_SOCKET, limit=MAX_RULE_RESPONSE_BYTES), 2)
     try:
-        writer.write(json.dumps(payload, separators=(",", ":")).encode("utf-8") + b"\n")
+        writer.write(encoded)
         await asyncio.wait_for(writer.drain(), 2)
         line = await asyncio.wait_for(reader.readline(), 2)
         if not line or len(line) > MAX_RULE_RESPONSE_BYTES + 1:
             raise ValueError("Rule service returned no bounded response")
         document = json.loads(line)
-        if not isinstance(document, dict) or not isinstance(document.get("rules"), list) or any(not isinstance(rule, dict) or not isinstance(rule.get("action"), dict) for rule in document["rules"]):
-            raise ValueError("Rule service returned invalid rules")
-        return document["rules"]
+        if not isinstance(document, dict):
+            raise ValueError("Rule service returned an invalid document")
+        return document
     finally:
         writer.close()
         await writer.wait_closed()
+
+
+async def _proxy_rules_for(method: str, host: str, path: str) -> list[dict]:
+    if not _rule_service_available():
+        return []
+    document = await _rule_document({"method": method, "host": host, "path": path})
+    if not isinstance(document.get("rules"), list) or any(not isinstance(rule, dict) or not isinstance(rule.get("action"), dict) for rule in document["rules"]):
+        raise ValueError("Rule service returned invalid rules")
+    return document["rules"]
 
 
 def _rule_order(rule: dict) -> tuple:
@@ -654,7 +681,7 @@ async def dns_request(flow: dns.DNSFlow) -> None:
     if question is None or question.class_ != dns.classes.IN or question.type not in (dns.types.A, dns.types.AAAA):
         return
     try:
-        if not RULE_SOCKET:
+        if not _rule_service_available():
             raise ValueError("Rule service is unavailable")
         rules = await _proxy_rules_for("DNS", question.name, "/")
         rule = next((item for item in rules if item["action"].get("type") == "dns_override"), None)
@@ -844,24 +871,12 @@ async def _request_rules(flow: http.HTTPFlow) -> None:
 
 
 async def _network_document(flow: http.HTTPFlow, profile_id: str | None = None) -> dict:
-    if not RULE_SOCKET:
+    if not _rule_service_available():
         return {"networkProfile": None, "networkProfileEnabled": False}
     request = flow.request
-    reader, writer = await asyncio.wait_for(asyncio.open_unix_connection(RULE_SOCKET, limit=MAX_RULE_RESPONSE_BYTES), 2)
-    try:
-        writer.write(json.dumps({"method": request.method, "host": request.pretty_host or request.host,
-            "path": urlsplit(request.url).path or "/", "request_id": flow.metadata.get("mas_sdk_request_id"),
-            "network_profile_id": profile_id}, separators=(",", ":")).encode() + b"\n")
-        await asyncio.wait_for(writer.drain(), 2)
-        line = await asyncio.wait_for(reader.readline(), 2)
-        if not line or len(line) > MAX_RULE_RESPONSE_BYTES + 1:
-            raise ValueError("Network profile service returned no bounded response")
-        document = json.loads(line)
-        if not isinstance(document, dict): raise ValueError("Invalid network profile response")
-        return document
-    finally:
-        writer.close()
-        await writer.wait_closed()
+    return await _rule_document({"method": request.method, "host": request.pretty_host or request.host,
+        "path": urlsplit(request.url).path or "/", "request_id": flow.metadata.get("mas_sdk_request_id"),
+        "network_profile_id": profile_id})
 
 
 async def _network_wait(flow: http.HTTPFlow, profile: dict, seconds: float) -> None:
