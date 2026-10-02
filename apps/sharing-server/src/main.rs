@@ -200,10 +200,23 @@ async fn create_share(
     if input.sha256.as_ref().is_some_and(|v| v != &digest) {
         return Err(bad("Preview digest mismatch"));
     }
-    db.execute("DELETE FROM shares WHERE expires_at<=?1", [now()])?;
+    db.execute(
+        "DELETE FROM shares WHERE expires_at<=?1 OR revoked=1",
+        [now()],
+    )?;
     let count: i64 = db.query_row("SELECT count(*) FROM shares", [], |r| r.get(0))?;
     if count >= 1000 {
         return Err(bad("Share limit reached; revoke existing shares"));
+    }
+    let bytes: i64 = db.query_row(
+        "SELECT coalesce(sum(length(CAST(artifact AS BLOB))),0) FROM shares",
+        [],
+        |r| r.get(0),
+    )?;
+    if bytes + input.artifact.len() as i64 > 64 * 1024 * 1024 {
+        return Err(bad(
+            "Shared artifact storage exceeds 64 MiB; revoke existing shares",
+        ));
     }
     let token = random_token()?;
     let id = random_token()?;
@@ -473,25 +486,53 @@ fn router(app: App) -> Router {
         .layer(middleware::from_fn_with_state(app.clone(), boundaries))
         .with_state(app)
 }
+#[cfg(unix)]
 fn secure_dir(path: &FilePath) -> Result<(), Box<dyn std::error::Error>> {
-    #[cfg(unix)]
     use std::os::unix::fs::{DirBuilderExt, MetadataExt};
-    if !path.exists() {
-        let mut builder = fs::DirBuilder::new();
-        builder.recursive(true);
-        #[cfg(unix)]
-        builder.mode(0o700);
-        builder.create(path)?;
+    match fs::symlink_metadata(path) {
+        Ok(_) => {}
+        Err(error) if error.kind() == std::io::ErrorKind::NotFound => {
+            fs::DirBuilder::new()
+                .recursive(true)
+                .mode(0o700)
+                .create(path)?;
+        }
+        Err(error) => return Err(error.into()),
     }
     let m = fs::symlink_metadata(path)?;
     if !m.is_dir() || m.file_type().is_symlink() {
         return Err("Data directory must be a real directory".into());
     }
-    #[cfg(unix)]
-    if m.mode() & 0o077 != 0 {
-        return Err("Data directory must have mode 0700".into());
+    // SAFETY: geteuid takes no arguments and returns the process effective user ID.
+    if m.mode() & 0o777 != 0o700 || m.uid() != unsafe { libc::geteuid() } {
+        return Err("Data directory must have mode 0700 and belong to the effective user".into());
     }
     Ok(())
+}
+#[cfg(not(unix))]
+fn secure_dir(_: &FilePath) -> Result<(), Box<dyn std::error::Error>> {
+    Err("Sharing storage requires Unix owner-only permissions; Windows owner-only ACL support is not implemented".into())
+}
+fn secure_database_file(path: &FilePath) -> Result<(), Box<dyn std::error::Error>> {
+    match fs::symlink_metadata(path) {
+        Ok(m) => {
+            if !m.is_file() || m.file_type().is_symlink() {
+                return Err("Database files must be regular files, never symlinks".into());
+            }
+            #[cfg(unix)]
+            {
+                use std::os::unix::fs::MetadataExt;
+                // SAFETY: geteuid takes no arguments and returns the process effective user ID.
+                if m.uid() != unsafe { libc::geteuid() } || m.mode() & 0o077 != 0 || m.nlink() != 1
+                {
+                    return Err("Database files must be private, singly linked files owned by the effective user".into());
+                }
+            }
+            Ok(())
+        }
+        Err(error) if error.kind() == std::io::ErrorKind::NotFound => Ok(()),
+        Err(error) => Err(error.into()),
+    }
 }
 fn initialize(dir: &FilePath) -> Result<Connection, Box<dyn std::error::Error>> {
     use std::io::Write;
@@ -499,8 +540,13 @@ fn initialize(dir: &FilePath) -> Result<Connection, Box<dyn std::error::Error>> 
     use std::os::unix::fs::{OpenOptionsExt, PermissionsExt};
     secure_dir(dir)?;
     let dbpath = dir.join("sharing.sqlite3");
-    if dbpath.exists() && fs::symlink_metadata(&dbpath)?.file_type().is_symlink() {
-        return Err("Database symlinks are not supported".into());
+    for name in [
+        "sharing.sqlite3",
+        "sharing.sqlite3-journal",
+        "sharing.sqlite3-wal",
+        "sharing.sqlite3-shm",
+    ] {
+        secure_database_file(&dir.join(name))?;
     }
     let db = Connection::open(&dbpath)?;
     #[cfg(unix)]

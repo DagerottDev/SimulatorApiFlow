@@ -376,9 +376,37 @@ fn optional_text(v: &Value, max: usize) -> ApiResult<()> {
 }
 fn pattern(v: &Value) -> ApiResult<()> {
     object(v, &["kind", "value"])?;
-    text(&v["value"], 2048)?;
+    let value = text(&v["value"], 256)?;
+    if value.is_empty() {
+        return Err(bad("Pattern cannot be empty"));
+    }
     if !["exact", "wildcard", "regex"].contains(&v["kind"].as_str().unwrap_or_default()) {
         return Err(bad("Invalid pattern type"));
+    }
+    if v["kind"] == "regex" {
+        regex::RegexBuilder::new(value)
+            .size_limit(2 * 1024 * 1024)
+            .build()
+            .map_err(|_| bad("Invalid or oversized regex"))?;
+    }
+    Ok(())
+}
+fn identity(v: &Value) -> ApiResult<()> {
+    let id = text(&v["id"], 120)?;
+    let name = text(&v["name"], 120)?;
+    if id.is_empty()
+        || !id
+            .bytes()
+            .all(|b| b.is_ascii_alphanumeric() || b"-_".contains(&b))
+        || name.trim().is_empty()
+    {
+        return Err(bad("Invalid definition identity"));
+    }
+    for key in ["createdAt", "updatedAt"] {
+        let timestamp = text(&v[key], 40)?;
+        if timestamp.is_empty() || !timestamp.bytes().all(|b| b.is_ascii_digit()) {
+            return Err(bad("Timestamps must be decimal epoch milliseconds"));
+        }
     }
     Ok(())
 }
@@ -398,8 +426,7 @@ fn rule(v: &Value) -> ApiResult<()> {
         ],
     )?;
     number(&v["schemaVersion"], 1, 1)?;
-    text(&v["id"], 128)?;
-    text(&v["name"], 128)?;
+    identity(v)?;
     if !v["enabled"].is_boolean() {
         return Err(bad("Rule enabled must be boolean"));
     }
@@ -409,6 +436,11 @@ fn rule(v: &Value) -> ApiResult<()> {
     let matcher = &v["matcher"];
     object(matcher, &["method", "host", "path"])?;
     optional_text(&matcher["method"], 32)?;
+    if let Some(method) = matcher["method"].as_str() {
+        if method.is_empty() || !method.bytes().all(|b| b.is_ascii_alphabetic()) {
+            return Err(bad("Invalid rule method"));
+        }
+    }
     pattern(&matcher["host"])?;
     pattern(&matcher["path"])?;
     let a = &v["action"];
@@ -421,7 +453,7 @@ fn rule(v: &Value) -> ApiResult<()> {
         }
         "block" => {
             object(a, &["type", "statusCode"])?;
-            number(&a["statusCode"], 100, 599)?;
+            number(&a["statusCode"], 400, 599)?;
         }
         "map_remote" | "reverse_proxy" | "upstream_proxy" => {
             object(a, &["type", "url"])?;
@@ -430,7 +462,8 @@ fn rule(v: &Value) -> ApiResult<()> {
         "rewrite_request" | "rewrite_response" => {
             object(a, &["type", "headers", "body"])?;
             headers(&a["headers"], true)?;
-            optional_text(&a["body"], MAX_ARTIFACT)?;
+            arr(&a["headers"], 64)?;
+            optional_text(&a["body"], 2 * 1024 * 1024)?;
         }
         "breakpoint" => {
             object(a, &["type", "stage"])?;
@@ -443,12 +476,31 @@ fn rule(v: &Value) -> ApiResult<()> {
             if !a["enabled"].is_boolean() {
                 return Err(bad("Invalid inspection flag"));
             }
+            if matcher["method"] != "TLS"
+                || matcher["path"]["kind"] != "wildcard"
+                || matcher["path"]["value"] != "*"
+            {
+                return Err(bad("Inspection requires TLS method and wildcard path"));
+            }
         }
         "dns_override" | "socks_proxy" => {
             object(a, &["type", "address"])?;
             let s = text(&a["address"], 256)?;
             if s.contains(['@', '/', '\\']) || s.is_empty() {
                 return Err(bad("Invalid address"));
+            }
+            if kind == "dns_override"
+                && (s.parse::<std::net::IpAddr>().is_err()
+                    || matcher["method"] != "DNS"
+                    || matcher["path"]["kind"] != "wildcard"
+                    || matcher["path"]["value"] != "*")
+            {
+                return Err(bad(
+                    "DNS override requires IP address, DNS method and wildcard path",
+                ));
+            }
+            if kind == "socks_proxy" && s.parse::<std::net::SocketAddr>().is_err() {
+                return Err(bad("SOCKS address must be IP:port"));
             }
         }
         _ => {
@@ -475,8 +527,7 @@ fn fixture(v: &Value) -> ApiResult<()> {
         ],
     )?;
     number(&v["schemaVersion"], 1, 1)?;
-    text(&v["id"], 128)?;
-    text(&v["name"], 128)?;
+    identity(v)?;
     number(&v["statusCode"], 100, 599)?;
     headers(&v["responseHeaders"], true)?;
     text(&v["createdAt"], 64)?;

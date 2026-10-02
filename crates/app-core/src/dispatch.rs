@@ -15,6 +15,10 @@ fn output<T: serde::Serialize>(value: T) -> Result<Value, AppError> {
 
 pub async fn invoke(command: &str, args: Value, state: &AppState) -> Result<Value, AppError> {
     match command {
+        "preview_share_har" => output(crate::sharing_commands::preview_share_har(input(&args, "flowIds")?, input(&args, "includeQuery")?, input(&args, "includeBodies")?, State(state))?),
+        "export_team_workspace" => output(crate::sharing_commands::export_team_workspace(input(&args, "ruleIds")?, input(&args, "fixtureIds")?, input(&args, "includeBodies")?, State(state))?),
+        "preview_team_workspace" => output(crate::sharing_commands::preview_team_workspace(input(&args, "artifact")?, State(state))?),
+        "import_team_workspace" => output(crate::sharing_commands::import_team_workspace(input(&args, "artifact")?, State(state))?),
         "export_selected_script_rules" => output(crate::settings_commands::export_selected_script_rules(input(&args, "ids")?, State(state))?),
         "sharing_request" => output(crate::sharing_transport::sharing_request(input(&args, "origin")?, input(&args, "accessToken")?, input(&args, "path")?, input(&args, "method")?, input(&args, "body")?).await?),
         "preview_interchange" => output(crate::interchange_commands::preview_interchange(input(&args, "format")?, input(&args, "text")?, State(state))?),

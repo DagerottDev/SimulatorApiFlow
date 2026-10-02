@@ -79,10 +79,10 @@ with tempfile.TemporaryDirectory(prefix="mas-sharing-http-") as temp:
         rule = {"schemaVersion": 1, "id": "rule", "name": "Block synthetic", "enabled": False,
                 "priority": 1, "matcher": {"method": None, "host": {"kind": "exact", "value": "example.test"},
                                            "path": {"kind": "wildcard", "value": "/*"}},
-                "action": {"type": "block", "statusCode": 503}, "createdAt": "2026-10-02", "updatedAt": "2026-10-02"}
+                "action": {"type": "block", "statusCode": 503}, "createdAt": "1", "updatedAt": "1"}
         fixture = {"schemaVersion": 1, "id": "fixture", "name": "Synthetic response", "statusCode": 200,
                    "responseHeaders": [], "responseBody": {"contentType": "application/json", "encoding": "text", "data": "{}"},
-                   "sourceFlowId": None, "createdAt": "2026-10-02", "updatedAt": "2026-10-02"}
+                   "sourceFlowId": None, "createdAt": "1", "updatedAt": "1"}
         workspace = {"schemaVersion": 1, "expectedRevision": 0, "rules": [rule], "fixtures": [fixture]}
         call("PUT", "/v1/workspace", workspace, token=vt, status=403)
         assert data("PUT", "/v1/workspace", workspace, token=et)["revision"] == 1
@@ -91,6 +91,9 @@ with tempfile.TemporaryDirectory(prefix="mas-sharing-http-") as temp:
         unsafe = json.loads(json.dumps(workspace))
         unsafe["expectedRevision"] = 1
         unsafe["rules"][0]["action"] = {"type": "script_hook", "stage": "request", "script": "print('bad')"}
+        call("PUT", "/v1/workspace", unsafe, status=400)
+        unsafe["rules"][0]["action"] = {"type": "block", "statusCode": 503}
+        unsafe["rules"][0]["matcher"]["path"] = {"kind": "regex", "value": "["}
         call("PUT", "/v1/workspace", unsafe, status=400)
         assert data("GET", "/v1/workspace")["revision"] == 1
 
@@ -120,6 +123,7 @@ with tempfile.TemporaryDirectory(prefix="mas-sharing-http-") as temp:
         call("GET", expired["urlPath"], token=None, status=404)
         count = db.execute("SELECT count(*) FROM shares").fetchone()[0]
         for malformed in ["{}", '{"log":', artifact.replace("<redacted>", "raw-secret"),
+                          artifact.replace('"name": "Authorization"', '"name": "Authorization", "name": "X-Test"'),
                           artifact.replace("Authorization", "X-Mobile-API-Studio-Request-ID"),
                           artifact.replace("https://example.test/path", "https://user:pass@example.test/path"),
                           artifact.replace("https://example.test/path", "https://example.test/path?token=secret")]:
@@ -136,7 +140,38 @@ with tempfile.TemporaryDirectory(prefix="mas-sharing-http-") as temp:
         call("GET", "/v1/me", token=et2, status=401)
         call("GET", member_share["urlPath"], token=None, status=404)
         db.close()
-        print("PASS: exact bytes/digest, identity-only sign-in, roles, CAS, expiry/revocation, token rotation, redaction rejection, origin isolation")
+        # Inspect only permissions/metadata of generated bootstrap credentials, never their contents.
+        bootstrap_dir = Path(temp) / "bootstrap"
+        bootstrap_env = dict(os.environ)
+        bootstrap_env.pop("MAS_SHARING_OWNER_TOKEN", None)
+        bootstrap_args = [str(binary), "--listen", "127.0.0.1:0", "--data-dir", str(bootstrap_dir)]
+        modification = None
+        for restart in range(2):
+            bootstrap = subprocess.Popen(bootstrap_args, env=bootstrap_env, stdout=subprocess.PIPE,
+                                         stderr=subprocess.DEVNULL)
+            try:
+                assert bootstrap.stdout.readline().startswith(b"Sharing service listening on "), "Bootstrap service failed to start"
+                token_file = bootstrap_dir / "owner-access-token"
+                assert bootstrap_dir.stat().st_mode & 0o777 == 0o700
+                assert token_file.stat().st_mode & 0o777 == 0o600
+                assert (bootstrap_dir / "sharing.sqlite3").stat().st_mode & 0o777 == 0o600
+                assert token_file.stat().st_size == 64
+                if restart:
+                    assert token_file.stat().st_mtime_ns == modification
+                modification = token_file.stat().st_mtime_ns
+            finally:
+                bootstrap.terminate()
+                bootstrap.wait(timeout=5)
+        unsafe_dir = Path(temp) / "dangling-database"
+        unsafe_dir.mkdir(mode=0o700)
+        outside = Path(temp) / "outside-database-must-stay-absent"
+        (unsafe_dir / "sharing.sqlite3").symlink_to(outside)
+        refused = subprocess.run([str(binary), "--listen", "127.0.0.1:0", "--data-dir", str(unsafe_dir)],
+                                 env=bootstrap_env, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=5)
+        assert refused.returncode != 0
+        assert not outside.exists()
+        assert not (unsafe_dir / "owner-access-token").exists()
+        print("PASS: exact bytes/digest, identity-only sign-in, roles, CAS, expiry/revocation, token rotation, redaction rejection, origin isolation, private one-time bootstrap")
     finally:
         proc.terminate()
         proc.wait(timeout=5)
