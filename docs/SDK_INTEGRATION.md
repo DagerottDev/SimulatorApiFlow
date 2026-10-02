@@ -150,6 +150,8 @@ MobileAPIStudio.configure(
 
 The Android configuration defaults to `enabled = false`, so the library is a pass-through unless the app explicitly opts in. `MobileAPIStudio.disable()` can turn it off at runtime.
 
+Apps targeting Android 17/API 37 or higher must declare `android.permission.ACCESS_LOCAL_NETWORK` and obtain its runtime grant before enabling the SDK or contacting the desktop proxy. Check the permission again before local requests and keep the SDK disabled on denial/revocation. The SDK does not request app permissions; the sample uses native Activity permission APIs. Apps targeting API 36 or lower should not request this permission. See [Android local-network guidance](https://developer.android.com/privacy-and-security/local-network-permission).
+
 ### Add app context
 
 ```kotlin
@@ -215,7 +217,7 @@ The runnable sample module is:
 sdks/android/sample
 ```
 
-It enables the SDK only when the application is debuggable, trusts user-installed CAs for the development capture scenario, and sends a sample OkHttp request through the SDK interceptor.
+It enables the SDK only when the application is debuggable and local-network access is permitted, trusts user-installed CAs for the development capture scenario, and sends a sample OkHttp request through the SDK interceptor.
 
 ## Desktop workflow
 
