@@ -14,6 +14,7 @@ export function ProxyRulesView() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
+  const [scriptExport, setScriptExport] = useState("");
   const [diagnostics, setDiagnostics] = useState<{ code: string; message: string }[]>([]);
 
   const refresh = useCallback(async () => {
@@ -47,7 +48,7 @@ export function ProxyRulesView() {
     return () => window.clearInterval(timer);
   }, []);
   const selected = useMemo(() => rules.find((rule) => rule.id === selectedId) ?? null, [rules, selectedId]);
-  useEffect(() => { setDraft(selected ? structuredClone(selected) : null); setPreviewMatched(null); }, [selected]);
+  useEffect(() => { setDraft(selected ? structuredClone(selected) : null); setPreviewMatched(null); setScriptExport(""); }, [selected]);
 
   const combined = [
     ...rules.map((rule) => ({ id: rule.id, name: rule.name, priority: rule.priority, createdAt: rule.createdAt, kind: "proxy" as const, enabled: rule.enabled })),
@@ -101,6 +102,18 @@ export function ProxyRulesView() {
       const result = await invoke<{ matched: boolean }>("preview_proxy_rule", { rule: draft, request: preview });
       setPreviewMatched(result.matched); setError(null);
     } catch (value) { setError(formatError(value)); setPreviewMatched(null); }
+  }
+
+  async function previewScriptExport() {
+    if (!draft) return;
+    setBusy(true); setScriptExport("");
+    try { const bundle = await invoke("export_selected_script_rules", { ids: [draft.id] }); setScriptExport(JSON.stringify(bundle, null, 2)); setError(null); }
+    catch (value) { setError(formatError(value)); }
+    finally { setBusy(false); }
+  }
+  function downloadScriptExport() {
+    const url = URL.createObjectURL(new Blob([scriptExport], { type: "application/json" }));
+    const link = document.createElement("a"); link.href = url; link.download = "mobile-api-studio-scripts.mas.json"; link.click(); URL.revokeObjectURL(url);
   }
 
   function patchPattern(field: "host" | "path", patch: Partial<RulePattern>) {
@@ -197,7 +210,7 @@ export function ProxyRulesView() {
           {draft.action.type === "dns_override" ? <label className="field-label">IP address<input className="text-input" value={draft.action.address} onChange={(event) => setDraft({ ...draft, action: { type: "dns_override", address: event.target.value } })} placeholder="127.0.0.1 or ::1" /></label> : null}
           {draft.action.type === "inspect_https" ? <label className="field-label">Connection policy<select value={String(draft.action.enabled)} onChange={(event) => setDraft({ ...draft, action: { type: "inspect_https", enabled: event.target.value === "true" } })}><option value="false">Pass encrypted traffic through</option><option value="true">Inspect HTTPS</option></select></label> : null}
         </div>
-        {draft.action.type === "script_hook" ? <><label className="field-label">Hook stage<select value={draft.action.stage} onChange={(event) => { if (draft.action.type === "script_hook") setDraft({ ...draft, action: { ...draft.action, stage: event.target.value as "request" | "response" | "websocket" } }); }}><option value="request">Request</option><option value="response">Response</option><option value="websocket">WebSocket message</option></select></label><label className="field-label">JavaScript (64 KiB max)<textarea className="replay-body-editor" value={draft.action.script} onChange={(event) => { if (draft.action.type === "script_hook") setDraft({ ...draft, action: { ...draft.action, script: event.target.value } }); }} /></label><p>Define synchronous transform(event), return the edited event. Runs in a disposable QuickJS worker: 32 MiB heap and 100 ms engine limit, no host APIs. Failure stops the matching flow. Imported rules stay disabled.</p></> : null}
+        {draft.action.type === "script_hook" ? <><label className="field-label">Hook stage<select value={draft.action.stage} onChange={(event) => { if (draft.action.type === "script_hook") setDraft({ ...draft, action: { ...draft.action, stage: event.target.value as "request" | "response" | "websocket" } }); }}><option value="request">Request</option><option value="response">Response</option><option value="websocket">WebSocket message</option></select></label><label className="field-label">JavaScript (64 KiB max)<textarea className="replay-body-editor" value={draft.action.script} onChange={(event) => { if (draft.action.type === "script_hook") setDraft({ ...draft, action: { ...draft.action, script: event.target.value } }); }} /></label><p>Define synchronous transform(event), return the edited event. Runs in a disposable QuickJS worker: 32 MiB heap and 100 ms engine limit, no host APIs. Failure stops the matching flow. Imported rules stay disabled. Exported source can contain secrets you typed; review it before downloading. Import script bundles through Settings.</p><button className="secondary compact" disabled={busy || draft.id === newRuleId} onClick={() => void previewScriptExport()}>Preview stored script export</button>{scriptExport ? <><textarea className="replay-body-editor" readOnly value={scriptExport} aria-label="Selected script export preview" /><button className="secondary compact" disabled={busy} onClick={downloadScriptExport}>Download previewed script bundle</button></> : null}</> : null}
         {draft.action.type === "inspect_https" ? <p className="muted-copy">First matching host rule decides before TLS. Applies to new connections; reconnect clients after changes. Encrypted TCP passthrough produces no HTTP details. UDP/QUIC passthrough is unavailable and stops with a diagnostic.</p> : null}
         {draft.action.type === "dns_override" ? <p className="muted-copy">Applies only to A/AAAA queries sent to the DNS listener. Start that listener from Connect and configure your development client to use it.</p> : null}
         {draft.action.type === "map_local" ? <><label className="field-label">Import local file (2 MiB max)<input type="file" disabled={busy} onChange={(event) => { const file = event.currentTarget.files?.[0]; event.currentTarget.value = ""; if (file) void importLocalFile(file); }} /></label><p className="muted-copy">Choose a file to copy it into the app configuration directory’s proxy-maps folder, or enter an existing filename above.</p></> : null}

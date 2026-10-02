@@ -2351,6 +2351,7 @@ dependencies = [
  "app-core",
  "axum",
  "core-model",
+ "libc",
  "serde",
  "serde_json",
  "tokio",

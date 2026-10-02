@@ -345,6 +345,13 @@ def _record_breakpoint_changes(flow: http.HTTPFlow, rule: dict, stage: str, deci
         _record_change(flow, rule, f"header:{str(row.get('name') or '')[:64]}", "prior value redacted", "set")
 
 
+def _replace_body(message, body: bytes) -> None:
+    # Changed payloads are unencoded bytes; let mitmproxy set their wire length.
+    message.headers.pop("content-encoding", None)
+    message.headers.pop("transfer-encoding", None)
+    message.content = body
+
+
 def _rewrite(message, action: dict, flow: http.HTTPFlow, rule: dict) -> None:
     for mutation in action.get("headers") or []:
         name = str(mutation["name"]).strip()
@@ -364,9 +371,7 @@ def _rewrite(message, action: dict, flow: http.HTTPFlow, rule: dict) -> None:
         if len(body) > MAX_BODY_BYTES:
             raise ValueError("Rewrite body exceeds capture limit")
         before_size = len(message.raw_content or b"")
-        message.raw_content = body
-        message.headers.pop("content-length", None)
-        message.headers.pop("content-encoding", None)
+        _replace_body(message, body)
         _record_change(flow, rule, "bodyBytes", before_size, len(body))
 
 
@@ -586,19 +591,15 @@ def _replace_headers(headers, rows: list[dict] | None) -> None:
 
 def _apply_decision_body(message, decision: dict) -> None:
     if decision.get("clearBody", False):
-        message.raw_content = b""
-        message.headers.pop("content-length", None)
-        message.headers.pop("content-encoding", None)
+        _replace_body(message, b"")
         return
     body = decision.get("body")
     if body is None:
         return
-    message.raw_content = _decode_breakpoint_body(body)
+    _replace_body(message, _decode_breakpoint_body(body))
     content_type = body.get("contentType")
     if content_type:
         message.headers["content-type"] = str(content_type)
-    message.headers.pop("content-length", None)
-    message.headers.pop("content-encoding", None)
 
 
 def _apply_request_breakpoint_decision(flow: http.HTTPFlow, decision: dict | None, strict: bool = False) -> bool:
@@ -742,7 +743,13 @@ async def _script_action(flow, item, stage, message=None):
 
 async def _script_or_stop(flow, item, stage, message=None):
     try:
-        await _script_action(flow, item, stage, message)
+        key = "mas_script_budget_" + stage
+        budget = flow.metadata.setdefault(key, {"count": 0, "deadline": time.monotonic() + 2})
+        budget["count"] += 1
+        remaining = budget["deadline"] - time.monotonic()
+        if budget["count"] > 16 or remaining <= 0:
+            raise ValueError("Script stage exceeds sixteen hooks or its two-second deadline")
+        await asyncio.wait_for(_script_action(flow, item, stage, message), remaining)
         return True
     except (OSError, ValueError, KeyError, TypeError, UnicodeDecodeError, asyncio.TimeoutError, BrokenPipeError):
         if message is not None: message.drop()
@@ -937,11 +944,9 @@ def _apply_json_mutations(flow: http.HTTPFlow, mutations: list[dict]) -> None:
         document = json.loads(raw.decode("utf-8"))
         for mutation in mutations:
             _set_json_pointer(document, str(mutation.get("pointer") or ""), mutation.get("value"), bool(mutation.get("remove", False)))
-        flow.response.raw_content = json.dumps(document, separators=(",", ":")).encode("utf-8")
+        _replace_body(flow.response, json.dumps(document, separators=(",", ":")).encode("utf-8"))
         if not flow.response.headers.get("content-type"):
             flow.response.headers["content-type"] = "application/json"
-        flow.response.headers.pop("content-length", None)
-        flow.response.headers.pop("content-encoding", None)
     except (UnicodeDecodeError, json.JSONDecodeError, ValueError, KeyError, IndexError) as exc:
         _emit({"type": "mock_rules_failed", "code": "mock_json_mutation_failed", "message": str(exc), "rule_id": flow.metadata.get("mas_mock_rule_id")})
 
@@ -949,12 +954,10 @@ def _apply_json_mutations(flow: http.HTTPFlow, mutations: list[dict]) -> None:
 def _apply_body_override(response: http.Response, override: dict) -> None:
     encoding = override.get("encoding", "text")
     data = override.get("data", "")
-    response.raw_content = base64.b64decode(data) if encoding == "base64" else str(data).encode("utf-8")
+    _replace_body(response, base64.b64decode(data) if encoding == "base64" else str(data).encode("utf-8"))
     content_type = override.get("contentType")
     if content_type:
         response.headers["content-type"] = content_type
-    response.headers.pop("content-length", None)
-    response.headers.pop("content-encoding", None)
 
 
 def _apply_header_mutations(response: http.Response, mutations: list[dict]) -> None:
@@ -1103,6 +1106,7 @@ async def websocket_message(flow: http.HTTPFlow) -> None:
     if ws is None or not ws.messages:
         return
     message = ws.messages[-1]
+    flow.metadata.pop("mas_script_budget_websocket", None)
     try:
         for item in await _proxy_rules(flow):
             if item.get("action", {}).get("type") == "script_hook" and item["action"].get("stage") == "websocket":

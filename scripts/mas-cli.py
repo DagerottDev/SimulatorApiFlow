@@ -78,11 +78,16 @@ def rpc_error(request_id, code, message):
 
 def mcp_stdio(path):
     initialized = False
-    for line in sys.stdin.buffer:
+    while line := sys.stdin.buffer.readline(MAX_REQUEST + 1):
         request_id = None
         try:
             if len(line) > MAX_REQUEST:
-                raise ValueError("MCP message exceeds 128 KiB")
+                while line and not line.endswith(b"\n"):
+                    line = sys.stdin.buffer.readline(MAX_REQUEST + 1)
+                response = rpc_error(None, -32600, "MCP message exceeds 128 KiB")
+                sys.stdout.buffer.write(json.dumps(response).encode() + b"\n")
+                sys.stdout.buffer.flush()
+                continue
             message = json.loads(line)
             if not isinstance(message, dict) or message.get("jsonrpc") != "2.0" or not isinstance(message.get("method"), str):
                 raise ValueError("Invalid JSON-RPC request")
@@ -97,7 +102,7 @@ def mcp_stdio(path):
                 continue
             if method == "initialize":
                 requested = params.get("protocolVersion", MCP_VERSION)
-                version = requested if requested in SUPPORTED_MCP_VERSIONS else MCP_VERSION
+                version = requested if isinstance(requested, str) and requested in SUPPORTED_MCP_VERSIONS else MCP_VERSION
                 result = {"protocolVersion": version, "capabilities": {"tools": {}}, "serverInfo": {"name": "mobile-api-studio", "version": "0.1.0"}}
             elif method == "ping":
                 result = {}
@@ -115,7 +120,8 @@ def mcp_stdio(path):
                     else:
                         output = socket_call(path, arguments["command"], arguments["args"])
                         failed = isinstance(output, dict) and "error" in output
-                        result = {"content": [{"type": "text", "text": json.dumps(output, ensure_ascii=False)}], "structuredContent": output, "isError": failed}
+                        structured = output if isinstance(output, dict) else {"result": output}
+                        result = {"content": [{"type": "text", "text": json.dumps(output, ensure_ascii=False)}], "structuredContent": structured, "isError": failed}
             else:
                 result = rpc_error(request_id, -32601, "Method not found")
 
@@ -124,9 +130,8 @@ def mcp_stdio(path):
                 sys.stdout.buffer.write(json.dumps(response, ensure_ascii=False, separators=(",", ":")).encode() + b"\n")
                 sys.stdout.buffer.flush()
         except (ValueError, json.JSONDecodeError) as error:
-            if request_id is not None:
-                sys.stdout.buffer.write(json.dumps(rpc_error(request_id, -32600, str(error))).encode() + b"\n")
-                sys.stdout.buffer.flush()
+            sys.stdout.buffer.write(json.dumps(rpc_error(request_id, -32600, str(error))).encode() + b"\n")
+            sys.stdout.buffer.flush()
         except (OSError, RuntimeError) as error:
             if request_id is not None:
                 result = {"content": [{"type": "text", "text": str(error)}], "isError": True}
