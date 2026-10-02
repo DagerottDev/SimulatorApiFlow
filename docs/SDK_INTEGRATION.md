@@ -85,7 +85,7 @@ let session = URLSession(configuration: config)
 
 This installs the SDK's opt-in `URLProtocol`. When the SDK is disabled the configuration is returned unchanged.
 
-The protocol forwards requests with its own ephemeral `URLSession`. It does not inherit custom settings from the original session, including a per-session proxy. If your client needs custom session or network settings, use the manual request instrumentation below and call `complete` when the client finishes. Automatic instrumentation passed on the iOS Simulator through an explicit reverse HTTP endpoint. The Simulator's regular proxy path for automatic integration still needs device validation; see [the platform acceptance record](PLATFORM_ACCEPTANCE.md).
+The protocol forwards requests with its own ephemeral `URLSession`. It does not inherit custom settings from the original session, including a per-session proxy. If your client needs custom session or network settings, use the manual request instrumentation below and call `complete` when the client finishes. Automatic instrumentation passed on the iOS Simulator through an explicit reverse HTTP endpoint, including cancellation/refusal terminal events and runtime disablement. The Simulator's regular proxy path for automatic integration still needs device validation; see [the platform acceptance record](PLATFORM_ACCEPTANCE.md).
 
 ### Manual/custom networking integration
 
@@ -200,7 +200,7 @@ try {
     val status = customClient.execute()
     requestId?.let { MobileAPIStudio.complete(it, statusCode = status) }
 } catch (error: Throwable) {
-    requestId?.let { MobileAPIStudio.complete(it, error = error) }
+    requestId?.let { MobileAPIStudio.complete(it, statusCode = null, error = error) }
     throw error
 }
 ```
