@@ -6,6 +6,7 @@ import mimetypes
 import os
 import random
 import stat
+import threading
 import time
 import weakref
 from urllib.parse import urlsplit
@@ -34,8 +35,102 @@ def _emit(payload: dict) -> None:
     print(EVENT_PREFIX + json.dumps(payload, separators=(",", ":")), flush=True)
 
 
+def _shutdown_if_service_gone() -> None:
+    try:
+        ctx.master.shutdown()
+    except BaseException:
+        os._exit(1)
+
+
+def _watch_service_parent(parent_pid: int, windows_handle=None, kernel32=None) -> None:
+    if os.name == "nt":
+        should_shutdown = False
+        try:
+            while True:
+                result = kernel32.WaitForSingleObject(windows_handle, 0)
+                if result == 0:  # WAIT_OBJECT_0
+                    should_shutdown = True
+                    break
+                if result != 0x102:  # WAIT_TIMEOUT
+                    should_shutdown = True
+                    break
+                time.sleep(0.25)
+        except BaseException:
+            should_shutdown = True
+        finally:
+            try:
+                if not kernel32.CloseHandle(windows_handle):
+                    should_shutdown = True
+            except BaseException:
+                should_shutdown = True
+        if should_shutdown:
+            _shutdown_if_service_gone()
+        return
+
+    try:
+        while os.getppid() == parent_pid:
+            time.sleep(0.25)
+    except BaseException:
+        pass
+    _shutdown_if_service_gone()
+
+
+def _start_service_parent_watchdog() -> None:
+    raw_pid = os.environ.get("MAS_SERVICE_PID")
+    if raw_pid is None:
+        return
+    windows_handle = None
+    kernel32 = None
+    try:
+        parent_pid = int(raw_pid)
+        if parent_pid <= 0:
+            raise ValueError("invalid service pid")
+        if os.name == "nt":
+            import ctypes
+            from ctypes import wintypes
+
+            kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
+            kernel32.OpenProcess.argtypes = [wintypes.DWORD, wintypes.BOOL, wintypes.DWORD]
+            kernel32.OpenProcess.restype = wintypes.HANDLE
+            kernel32.WaitForSingleObject.argtypes = [wintypes.HANDLE, wintypes.DWORD]
+            kernel32.WaitForSingleObject.restype = wintypes.DWORD
+            kernel32.CloseHandle.argtypes = [wintypes.HANDLE]
+            kernel32.CloseHandle.restype = wintypes.BOOL
+            kernel32.GetCurrentProcess.restype = wintypes.HANDLE
+            kernel32.GetProcessTimes.argtypes = [wintypes.HANDLE] + [ctypes.POINTER(wintypes.FILETIME)] * 4
+            kernel32.GetProcessTimes.restype = wintypes.BOOL
+            windows_handle = kernel32.OpenProcess(0x00101000, False, parent_pid)  # SYNCHRONIZE | QUERY_LIMITED_INFORMATION
+            if not windows_handle:
+                raise OSError(ctypes.get_last_error(), "cannot monitor service process")
+
+            def created_at(handle):
+                values = [wintypes.FILETIME() for _ in range(4)]
+                if not kernel32.GetProcessTimes(handle, *(ctypes.byref(value) for value in values)):
+                    raise OSError("cannot verify service process identity")
+                return (values[0].dwHighDateTime << 32) | values[0].dwLowDateTime
+
+            # Windows console launchers may be intermediate parents. The retained service
+            # handle identifies the owner; creation times reject a recycled startup PID.
+            if created_at(windows_handle) > created_at(kernel32.GetCurrentProcess()):
+                raise RuntimeError("capture service process identity changed")
+        elif os.getppid() != parent_pid:
+            raise RuntimeError("capture service parent does not match")
+
+        threading.Thread(
+            target=_watch_service_parent,
+            args=(parent_pid, windows_handle, kernel32),
+            name="mas-service-parent-watch",
+            daemon=True,
+        ).start()
+    except BaseException:
+        if windows_handle and kernel32:
+            kernel32.CloseHandle(windows_handle)
+        _shutdown_if_service_gone()
+
+
 def running() -> None:
     # This hook runs after mitmproxy has successfully started its configured servers.
+    _start_service_parent_watchdog()
     _emit({"type": "engine_started"})
 
 

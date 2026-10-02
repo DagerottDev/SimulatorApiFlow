@@ -233,6 +233,7 @@ impl CaptureEngine for MitmDumpEngine {
             .arg("-s")
             .arg(&self.addon_path)
             .env("MAS_SESSION_ID", &config.session_id)
+            .env("MAS_SERVICE_PID", std::process::id().to_string())
             .env_remove("MAS_RULE_SOCKET")
             .env_remove("MAS_RULE_TCP_PORT")
             .env_remove("MAS_RULE_TCP_TOKEN")
