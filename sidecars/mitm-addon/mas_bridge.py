@@ -673,6 +673,83 @@ async def dns_request(flow: dns.DNSFlow) -> None:
         flow.response = flow.request.fail(dns.response_codes.SERVFAIL)
 
 
+
+_SCRIPT_SLOTS = asyncio.Semaphore(4)
+
+async def _script_action(flow, item, stage, message=None):
+    worker = os.environ.get("MAS_SCRIPT_WORKER")
+    if not worker:
+        raise ValueError("Script worker is unavailable; build and install the worker alongside the local service")
+    target = flow.response if stage == "response" else flow.request
+    raw = message.content if message is not None else (target.raw_content or b"")
+    if len(raw) > MAX_BODY_BYTES:
+        raise ValueError("Script body exceeds the supported limit")
+    event = {"stage": stage, "method": flow.request.method, "url": flow.request.url,
+        "headers": [] if message is not None else _headers(target.headers),
+        "body": {"dataBase64": base64.b64encode(raw).decode("ascii"),
+            "contentType": None if message is not None else target.headers.get("content-type"),
+            "isTruncated": False}}
+    if stage == "response": event["statusCode"] = target.status_code
+    if message is not None:
+        event.update(opcode=int(message.type), fromClient=message.from_client, dropped=message.dropped)
+    payload = json.dumps({"script": item["action"]["script"], "event": event}, ensure_ascii=False, separators=(",", ":")).encode()
+    if len(json.dumps(event, ensure_ascii=False).encode()) > 2 * 1024 * 1024 or len(payload) > 3 * 1024 * 1024:
+        raise ValueError("Script event exceeds the 2 MiB worker input limit")
+    async with _SCRIPT_SLOTS:
+        process = await asyncio.create_subprocess_exec(worker, stdin=asyncio.subprocess.PIPE,
+            stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.DEVNULL, env={}, cwd="/")
+        async def exchange():
+            process.stdin.write(payload)
+            await process.stdin.drain()
+            process.stdin.close()
+            result = bytearray()
+            while True:
+                chunk = await process.stdout.read(65536)
+                if not chunk: break
+                result.extend(chunk)
+                if len(result) > 2 * 1024 * 1024 + 1: raise ValueError("Script output exceeded its limit")
+            await process.wait()
+            if process.returncode != 0: raise ValueError("Script worker failed")
+            return json.loads(result)
+        try:
+            output = await asyncio.wait_for(exchange(), 1)
+        finally:
+            if process.returncode is None:
+                process.kill()
+                await process.wait()
+    if not isinstance(output, dict) or "error" in output or output.get("stage") != stage or set(output) - set(event):
+        raise ValueError("Script failed or returned an invalid event")
+    if message is not None:
+        if any(output.get(key) != event[key] for key in ("method", "url", "opcode", "fromClient", "headers")) or type(output.get("dropped")) is not bool:
+            raise ValueError("Script changed read-only WebSocket metadata")
+        content = _decode_breakpoint_body(output.get("body"))
+        if content is None: raise ValueError("Script must return a complete WebSocket body")
+        if int(message.type) == 1: content.decode("utf-8")
+        message.content = content
+        if output["dropped"]: message.drop()
+    else:
+        decision = {key: value for key, value in output.items() if key in ("method", "url", "headers", "body", "statusCode")}
+        decision["action"] = "continue"
+        _validate_breakpoint_decision(decision)
+        if output.get("body") == event["body"]: decision.pop("body", None)
+        if stage == "response":
+            if output.get("method") != event["method"] or output.get("url") != event["url"]:
+                raise ValueError("Response scripts cannot rewrite request identity")
+            _apply_response_breakpoint_decision(flow, decision, strict=True)
+        else: _apply_request_breakpoint_decision(flow, decision, strict=True)
+    _record_proxy_rule(flow, item)
+    _record_change(flow, item, "script:" + stage, "local event", "transformed")
+
+async def _script_or_stop(flow, item, stage, message=None):
+    try:
+        await _script_action(flow, item, stage, message)
+        return True
+    except (OSError, ValueError, KeyError, TypeError, UnicodeDecodeError, asyncio.TimeoutError, BrokenPipeError):
+        if message is not None: message.drop()
+        _emit({"type": "proxy_rules_failed", "code": "script_hook_failed", "message": "Script hook failed; matching flow stopped.", "rule_id": item.get("id")})
+        _network_error(flow, "script_hook_failed", "Script hook failed; matching flow stopped.")
+        return False
+
 async def _request_rules(flow: http.HTTPFlow) -> None:
     _capture_sdk_request_id(flow)
     tls_rule = _TLS_POLICIES.get(flow.client_conn, {}).get("rule")
@@ -687,14 +764,16 @@ async def _request_rules(flow: http.HTTPFlow) -> None:
         return
     original_identity = (flow.request.method, flow.request.url, flow.request.pretty_host)
     try:
-        supported = {"allow", "block", "map_local", "map_remote", "rewrite_request", "rewrite_response", "breakpoint", "no_cache", "block_cookies"}
+        supported = {"allow", "block", "map_local", "map_remote", "rewrite_request", "rewrite_response", "breakpoint", "no_cache", "block_cookies", "script_hook"}
         for item in proxy_rules:
             if item["action"].get("type") not in supported:
                 raise ValueError(f"Rule action {item['action'].get('type')} is not yet supported")
         for item in proxy_rules:
             action = item.get("action") or {}
             kind = action.get("type")
-            if kind == "rewrite_request":
+            if kind == "script_hook" and action.get("stage") == "request":
+                if not await _script_or_stop(flow, item, "request"): return
+            elif kind == "rewrite_request":
                 _rewrite(flow.request, action, flow, item)
                 _record_proxy_rule(flow, item)
             elif kind == "no_cache":
@@ -718,7 +797,7 @@ async def _request_rules(flow: http.HTTPFlow) -> None:
         if (flow.request.method, flow.request.url, flow.request.pretty_host) != original_identity:
             # Re-match the edited request once; request mutations must not run twice.
             proxy_rules = await _proxy_rules(flow)
-        flow.metadata["mas_response_proxy_rules"] = [item for item in proxy_rules if item.get("action", {}).get("type") in ("rewrite_response", "breakpoint", "no_cache", "block_cookies")]
+        flow.metadata["mas_response_proxy_rules"] = [item for item in proxy_rules if item.get("action", {}).get("type") in ("rewrite_response", "breakpoint", "no_cache", "block_cookies", "script_hook")]
         rule = _matching_rule(flow)
         if _apply_terminal_rule(flow, proxy_rules, rule):
             return
@@ -738,7 +817,7 @@ async def _request_rules(flow: http.HTTPFlow) -> None:
         if (flow.request.method, flow.request.url, flow.request.pretty_host) != before_identity:
             try:
                 rematched = await _proxy_rules(flow)
-                flow.metadata["mas_response_proxy_rules"] = [item for item in rematched if item.get("action", {}).get("type") in ("rewrite_response", "breakpoint", "no_cache", "block_cookies")]
+                flow.metadata["mas_response_proxy_rules"] = [item for item in rematched if item.get("action", {}).get("type") in ("rewrite_response", "breakpoint", "no_cache", "block_cookies", "script_hook")]
                 if _apply_terminal_rule(flow, rematched, rule):
                     return
             except (OSError, ValueError, KeyError, TypeError, UnicodeDecodeError, asyncio.TimeoutError, asyncio.LimitOverrunError) as exc:
@@ -924,7 +1003,9 @@ async def response(flow: http.HTTPFlow) -> None:
     try:
         for item in flow.metadata.get("mas_response_proxy_rules", []):
             action = item["action"]
-            if action["type"] == "rewrite_response":
+            if action["type"] == "script_hook" and action.get("stage") == "response":
+                if not await _script_or_stop(flow, item, "response"): return
+            elif action["type"] == "rewrite_response":
                 _rewrite(response, action, flow, item)
                 _record_proxy_rule(flow, item)
             elif action["type"] == "no_cache":
@@ -1017,11 +1098,18 @@ async def response(flow: http.HTTPFlow) -> None:
     })
 
 
-def websocket_message(flow: http.HTTPFlow) -> None:
+async def websocket_message(flow: http.HTTPFlow) -> None:
     ws = flow.websocket
     if ws is None or not ws.messages:
         return
     message = ws.messages[-1]
+    try:
+        for item in await _proxy_rules(flow):
+            if item.get("action", {}).get("type") == "script_hook" and item["action"].get("stage") == "websocket":
+                if not await _script_or_stop(flow, item, "websocket", message): return
+    except (OSError, ValueError, UnicodeDecodeError, asyncio.TimeoutError, asyncio.LimitOverrunError):
+        _network_error(flow, "script_hook_failed", "WebSocket rule lookup failed; matching flow stopped.")
+        return
     sequence = int(flow.metadata.get("mas_websocket_sequence", 0)) + 1
     flow.metadata["mas_websocket_sequence"] = sequence
     opcode = int(message.type)

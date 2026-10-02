@@ -17,7 +17,7 @@ use std::{collections::HashSet, fs};
 use storage::{ImportedFlow, ImportedSession, WorkspaceReplacement};
 use workspace_core::{ConnectionDoctorReport, DoctorCheck, DoctorStatus};
 
-const PORTABLE_BUNDLE_VERSION: u16 = 6;
+const PORTABLE_BUNDLE_VERSION: u16 = 7;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -470,7 +470,7 @@ pub async fn import_workspace(
     } else {
         None
     };
-    if !matches!(bundle.bundle_version, 2 | 3 | 4 | 5 | PORTABLE_BUNDLE_VERSION) {
+    if !matches!(bundle.bundle_version, 2 | 3 | 4 | 5 | 6 | PORTABLE_BUNDLE_VERSION) {
         return Err(AppError::new(
             "unsupported_bundle_version",
             format!(
@@ -762,6 +762,10 @@ fn validate_bundle_network_profiles(bundle: &PortableWorkspaceBundle, mode: &Imp
 }
 
 fn validate_bundle_rules(bundle: &PortableWorkspaceBundle, mode: &ImportMode, state: &State<'_, AppState>) -> Result<Vec<ProxyRule>, AppError> {
+    if bundle.bundle_version < 7 && bundle.proxy_rules.iter().any(|rule| matches!(rule.action, core_model::proxy_rules::ProxyRuleAction::ScriptHook { .. })) {
+        return Err(AppError::new("bundle_scripts_invalid", "Script hooks require bundle version 7.", true));
+    }
+
     if bundle.proxy_rules.len() > 1_000 || (bundle.bundle_version < 4 && !bundle.proxy_rules.is_empty()) {
         return Err(AppError::new("bundle_proxy_rules_invalid", "Bundle contains unsupported or too many proxy rules.", true));
     }
@@ -1032,7 +1036,7 @@ mod tests {
                 offline: false, failure_percent: 1.0, created_at: "1".into(), updated_at: "2".into() };
             state.database.upsert_network_profile(&profile).unwrap();
             let bundle = export_workspace(State(&state)).unwrap();
-            assert_eq!(bundle.bundle_version, 6);
+            assert_eq!(bundle.bundle_version, 7);
             assert_eq!(bundle.network_profiles, vec![profile.clone()]);
             let mut invalid = bundle.clone(); invalid.network_profiles[0].latency_ms = 10_001;
             assert_eq!(import_workspace(invalid, ImportMode::Replace, State(&state)).await.unwrap_err().code, "bundle_network_profiles_invalid");

@@ -23,6 +23,9 @@ use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 use tower_http::services::{ServeDir, ServeFile};
 
+#[cfg(unix)]
+mod control_socket;
+
 #[derive(Clone)]
 struct ServerState {
     core: CoreService,
@@ -269,7 +272,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let listener =
         tokio::net::TcpListener::bind(SocketAddrV4::new(Ipv4Addr::LOCALHOST, port)).await?;
     let _data_lock = lock_data_dir(&data_dir)?;
+    #[cfg(unix)]
+    let control_socket_path = data_dir.join("control/socket");
     let core = CoreService::start(data_dir)?;
+    #[cfg(unix)]
+    let _control_socket = control_socket::start(core.clone(), control_socket_path).await?;
     let state = ServerState {
         core: core.clone(),
         token: random_token()?.into(),
