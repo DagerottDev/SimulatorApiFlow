@@ -28,6 +28,8 @@ export function ConnectView({ onOpenTraffic, sharedConnection }: { onOpenTraffic
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [connection, setConnection] = useState<ConnectionSnapshot>(disconnected);
   const [connectionDiagnostics, setConnectionDiagnostics] = useState<ConnectionDiagnostic[]>([]);
+  // Recovery outcomes remain useful after disconnected status refreshes.
+  const [recoveryDiagnostics, setRecoveryDiagnostics] = useState<ConnectionDiagnostic[]>([]);
   const [pairingToken, setPairingToken] = useState<string | null>(null);
   const [pendingRollback, setPendingRollback] = useState<RollbackJournal | null>(null);
   const [doctor, setDoctor] = useState<ConnectionDoctorReport | null>(null);
@@ -103,6 +105,7 @@ export function ConnectView({ onOpenTraffic, sharedConnection }: { onOpenTraffic
 
   async function connect() {
     if (!selected) return;
+    setRecoveryDiagnostics([]);
     setActing(true);
     try {
       const result = await invoke<ConnectDeviceResult>("connect_device", {
@@ -124,6 +127,7 @@ export function ConnectView({ onOpenTraffic, sharedConnection }: { onOpenTraffic
   }
 
   async function connectTarget(target: CaptureTarget) {
+    setRecoveryDiagnostics([]);
     setActing(true);
     try {
       const result = await invoke<ConnectDeviceResult>("connect_capture_target", {
@@ -145,6 +149,7 @@ export function ConnectView({ onOpenTraffic, sharedConnection }: { onOpenTraffic
   }
 
   async function disconnect() {
+    setRecoveryDiagnostics([]);
     setActing(true);
     try {
       const result = await invoke<ConnectionSnapshot>("disconnect_device");
@@ -166,7 +171,8 @@ export function ConnectView({ onOpenTraffic, sharedConnection }: { onOpenTraffic
     setActing(true);
     try {
       const diagnostics = await invoke<ConnectionDiagnostic[]>("recover_pending_rollback");
-      setConnectionDiagnostics(diagnostics);
+      setConnectionDiagnostics([]);
+      setRecoveryDiagnostics(diagnostics);
       setPendingRollback(null);
       setError(null);
       await refresh();
@@ -177,7 +183,7 @@ export function ConnectView({ onOpenTraffic, sharedConnection }: { onOpenTraffic
     }
   }
 
-  const allDiagnostics = [...payload.diagnostics, ...connectionDiagnostics];
+  const allDiagnostics = [...payload.diagnostics, ...connectionDiagnostics, ...recoveryDiagnostics];
   const selectedReady = selected ? isReady(selected) : false;
 
   return (
