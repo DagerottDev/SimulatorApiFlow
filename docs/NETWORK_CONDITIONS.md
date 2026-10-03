@@ -18,10 +18,14 @@ Focused Rust checks cover scope precedence, invalid/unknown fields (including un
 
 Live loopback result: baseline 0.082 s; combined 64 KiB/s upload/download plus 200 ms latency 1.227 s; jitter samples 0.215/0.265/0.204 s after baseline subtraction; disable released the waiting request at 0.340 s. Offline and 100% failure diagnostics persisted. Protocol regression checks passed HTTP/2/TLS/gRPC trailers and WebSocket text/binary/empty capture. OpenJEV selected specificity-first matching without provider fallback.
 
+## Android Emulator HTTPS acceptance — 2026-10-03
+
+The actual API 37 ARM emulator/debug app passed real SDK attribution and overlapping global1800/app600/host200/endpoint1000 profiles through HTTPS. Three captured baseline requests had median 70 ms. Additional app delay was 584/689/610 ms, with concurrent app requests at 583/572/573 ms; host won at 173 ms, endpoint at 984 ms, and disable-all returned to 60 ms total. Each request ID joined its completed capture; SDK headers were removed upstream. The fixture measured captured HTTP time rather than SDK duration (which includes cold client TLS setup), accepted configured delay ±150 ms, and required at least 250 ms between precedence levels. It matched the original request authority retained by mitmproxy rather than the mapped upstream address. Evidence and fixture limits are in [PLATFORM_ACCEPTANCE.md](PLATFORM_ACCEPTANCE.md). Simulator/physical-device profiles and the rest of the matrix remain separate.
+
 ## Owner-led acceptance still pending
 
 1. Measure profiles in Simulator/Emulator and physical-device HTTP(S) capture; repeat recovery, Replay, SDK and import regressions.
-2. Verify app attribution timing with real SDKs and overlapping profiles on concurrent application traffic.
+2. Repeat the passed Android real-SDK overlapping/concurrent profile cases on Simulator and physical devices.
 3. Validate large bodies, supported HTTP/2/HTTP/3 capture modes and the explicit streaming/WebSocket/packet-loss limits.
 4. Validate packaged entry points, keyboard/accessibility and release compatibility. Current automated loopback checks exercise the localhost service and browser UI.
 
