@@ -248,6 +248,7 @@ export interface NormalizedEndpoint {
 }
 
 export interface TrafficSearchQuery {
+  sdkText?: string | null;
   text: string | null;
   sessionId: string | null;
   source: FlowSource | null;

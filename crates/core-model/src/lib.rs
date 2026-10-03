@@ -506,6 +506,7 @@ pub struct EnvironmentVariable {
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Default)]
 #[serde(rename_all = "camelCase")]
 pub struct TrafficSearchQuery {
+    pub sdk_text: Option<String>,
     pub text: Option<String>,
     pub session_id: Option<String>,
     pub source: Option<FlowSource>,
