@@ -264,3 +264,7 @@ If the app does not appear under **SDK**:
 6. check the SDK screen for the expected handshake.
 
 If the SDK client appears but a proxy flow says **proxy-only**, confirm the request is going through the URLSession integration, OkHttp interceptor, or manual correlation API, and that the request itself is captured by the proxy.
+
+## Network-profile attribution timing
+
+Automatic instrumentation sends start telemetry separately from the forwarded app request. It does not wait for server ingestion. App profiles require an already persisted event linked to a unique registered app; a matching correlation header and later Inspector context do not establish that identity at initial selection. A broader profile can therefore apply to an automatic request. Simulator selected-profile diagnostics observed global 1800 alongside app 600 requests, while a manual-SDK acceptance fixture used a persisted-event acknowledgment before dispatch. This fixture is not a new SDK guarantee or a reason to block real requests on telemetry. See [PLATFORM_ACCEPTANCE.md](PLATFORM_ACCEPTANCE.md) for timing failures and scope.
