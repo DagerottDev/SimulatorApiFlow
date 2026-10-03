@@ -26,10 +26,12 @@ Simulator diagnostics observed correct app/host/endpoint selections and disable-
 
 A separate actual Simulator manual-SDK request confirmed disable-all releasing an already active global 2000 wait. The origin was absent before disable and reached 141.82 ms after it began; captured total 231 ms, next unprofiled request +56 ms against 43 ms baseline. All five SDK/capture pairs and upstream header removal passed; cleanup left no owned listeners or rollback. See `/private/tmp/mas-ios-profile-release/`. A separate real manual-SDK deletion check also released an active 2,000 ms wait: origin at 104.50 ms after deletion began, captured total 203 ms; the next request added 40 ms over a 39 ms baseline. The profile list was empty before the next request. Five SDK/capture pairs and upstream header removal passed, with no CA installation or trust change. Evidence: `/private/tmp/mas-ios-profile-delete/`. These bounded release checks do not close the strict timing/precedence matrix.
 
+The complete manually instrumented, persisted-attribution-gated Simulator matrix later passed with diagnostic measurements and an unmodified production confirmation, keeping ±150 ms/250 ms criteria. Production increments were serial app 564/556/567, concurrent 597/563/748, host 170, endpoint 972 and disabled -35 ms against a 66 ms median baseline. All 12 SDK/capture pairs and upstream header removal passed; cleanup preserved original data/trust. Earlier intermittent failures remain retained, and no tolerance or production timing code changed. See [PLATFORM_ACCEPTANCE.md](PLATFORM_ACCEPTANCE.md) for the paired transport timings, exact artifacts and limits; automatic best-effort attribution and physical/default-routing cases remain separate.
+
 ## Owner-led acceptance still pending
 
 1. Measure profiles in Simulator/Emulator and physical-device HTTP(S) capture; repeat recovery, Replay, SDK and import regressions.
-2. Repeat the passed Android real-SDK overlapping/concurrent profile cases on Simulator and physical devices.
+2. Extend the now-passed gated Simulator overlapping/concurrent profile cases to physical devices and automatic attribution scenarios consistent with the best-effort SDK contract.
 3. Validate large bodies, supported HTTP/2/HTTP/3 capture modes and the explicit streaming/WebSocket/packet-loss limits.
 4. Validate packaged entry points, keyboard/accessibility and release compatibility. Current automated loopback checks exercise the localhost service and browser UI.
 
