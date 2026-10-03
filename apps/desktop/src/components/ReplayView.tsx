@@ -74,6 +74,7 @@ export function ReplayView({ savedRequestId = null }: ReplayViewProps) {
     }
 
     let cancelled = false;
+    setDraft(null);
     setLoadingDraft(true);
     invoke<ReplayDraft>("create_replay_draft", { flowId: sourceId })
       .then((nextDraft) => {
