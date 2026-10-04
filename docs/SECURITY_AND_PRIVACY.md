@@ -31,7 +31,7 @@ Required policy:
 - CA installation is for developer-controlled test runtimes;
 - the product does not implement silent certificate-pinning bypass.
 
-For iOS Simulator the app can install the development root certificate through `simctl`. Some runtime versions may still require the developer to explicitly enable full trust.
+One-click iOS Simulator setup installs the development root certificate using `simctl keychain add-root-cert` in the selected booted Simulator. It does not install a trusted CA in the Mac system keychain. If a particular runtime reports a trust failure, check Simulator Certificate Trust Settings; this is troubleshooting rather than a mandatory step for every setup.
 
 ## 3. Proxy/device mutation and rollback
 
@@ -40,8 +40,10 @@ Before changing a supported mutable proxy setting, Mobile API Studio records eno
 Current behavior:
 
 - Android Emulator proxy state is read before mutation and restored on disconnect/recovery.
-- A rollback journal survives abnormal shutdown for supported mutations.
-- iOS Simulator proxy routing is guided/manual rather than silently changing broad host proxy configuration.
+- A rollback journal survives abnormal shutdown for supported mutations. On macOS it is written atomically with private permissions before changing network settings; the saved proxy dictionary never enters browser responses or workspace exports.
+- iOS Simulator automatic routing is an explicit Connect option. It sets HTTP/HTTPS proxies on the selected current-route Mac network service, so other proxy-aware Mac apps can be affected. It preserves the original configuration and Network Location; active proxies, PAC, autodiscovery and proxy authentication block setup.
+- Disable routing and disconnect restore the saved settings. macOS authorization may be required. External changes are preserved; recovery refuses to overwrite an unexpected configuration or a different Network Location.
+- A failed restoration keeps the capture listener and local UI running. Successful restoration requires readable effective routing that no longer points at the capture proxy before listener shutdown. After an abrupt kill, use the pending recovery action when restarting. The manual app-scoped alternative remains available.
 
 Never assume the pre-existing state was “no proxy.”
 

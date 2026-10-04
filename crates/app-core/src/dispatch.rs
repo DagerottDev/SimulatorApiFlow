@@ -189,6 +189,9 @@ pub async fn invoke(command: &str, args: Value, state: &AppState) -> Result<Valu
         }
         "health" => output(crate::health(State(state))),
         "list_devices" => output(crate::list_devices()),
+        "list_mac_network_services" => crate::mac_proxy::list().await,
+        "setup_ios_simulator" => output(crate::connect_device_with_proxy(input(&args, "deviceId")?, input(&args, "sessionName")?, Some(input(&args, "networkServiceId")?), State(state)).await?),
+        "set_ios_routing" => output(crate::set_ios_routing(input(&args, "enabled")?, State(state)).await?),
         "list_mac_processes" => output(crate::list_mac_processes()?),
         "list_lan_interfaces" => output(crate::list_lan_interfaces()?),
         "list_flows" => output(crate::list_flows(State(state))?),

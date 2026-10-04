@@ -78,6 +78,7 @@ struct AppState {
     capture_engine: Arc<MitmDumpEngine>,
     active_connection: Mutex<Option<ActiveConnection>>,
     connection_operation: Mutex<()>,
+    shutting_down: std::sync::atomic::AtomicBool,
     rollback_path: PathBuf,
     proxy_rule_diagnostics: Arc<StdMutex<VecDeque<ProxyRuleDiagnostic>>>,
     tls_diagnostics: Arc<StdMutex<RecentTlsDiagnostics>>,
@@ -95,6 +96,8 @@ struct ActiveConnection {
     target: CaptureTarget,
     strategy: String,
     previous_android_proxy: Option<String>,
+    mac_proxy_lease: Option<mac_proxy::Lease>,
+    routing_enabled: bool,
     lan_guard: Option<LanGuard>,
     sdk_guard: Option<LanGuard>,
 }
@@ -168,6 +171,8 @@ struct ConnectionSnapshot {
     proxy_host: Option<String>,
     proxy_port: Option<u16>,
     capture_target: Option<CaptureTarget>,
+    routing_enabled: Option<bool>,
+    mac_network_service: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -187,6 +192,8 @@ struct RollbackJournal {
     session_id: String,
     previous_android_proxy: Option<String>,
     ios_ca_installed: bool,
+    #[serde(default)]
+    mac_proxy_lease: Option<mac_proxy::Lease>,
 }
 
 fn health(state: State<'_, AppState>) -> String {
@@ -385,6 +392,9 @@ async fn connect_capture_target(
         ));
     }
     let _operation = state.connection_operation.lock().await;
+    if state.shutting_down.load(std::sync::atomic::Ordering::SeqCst) {
+        return Err(AppError::new("service_shutting_down", "The service is shutting down. Finish routing recovery before restarting.", true));
+    }
     if state.active_connection.lock().await.is_some() {
         return Err(AppError::new(
             "connection_already_active",
@@ -548,6 +558,8 @@ async fn connect_capture_target(
             target: target.clone(),
             strategy: strategy.into(),
             previous_android_proxy: None,
+            mac_proxy_lease: None,
+            routing_enabled: false,
             lan_guard,
             sdk_guard,
         };
@@ -612,7 +624,19 @@ async fn connect_device(
     session_name: Option<String>,
     state: State<'_, AppState>,
 ) -> Result<ConnectDeviceResult, AppError> {
+    connect_device_with_proxy(device_id, session_name, None, state).await
+}
+
+async fn connect_device_with_proxy(
+    device_id: String,
+    session_name: Option<String>,
+    network_service: Option<String>,
+    state: State<'_, AppState>,
+) -> Result<ConnectDeviceResult, AppError> {
     let _operation = state.connection_operation.lock().await;
+    if state.shutting_down.load(std::sync::atomic::Ordering::SeqCst) {
+        return Err(AppError::new("service_shutting_down", "The service is shutting down. Finish routing recovery before restarting.", true));
+    }
     if state.active_connection.lock().await.is_some() {
         return Err(AppError::new(
             "connection_already_active",
@@ -653,10 +677,17 @@ async fn connect_device(
         ));
     }
 
+    let mac_proxy_lease = match network_service {
+        Some(service) if is_ios => Some(mac_proxy::prepare(&service).await?),
+        Some(_) => return Err(AppError::new("unsupported_proxy_target", "Automatic Mac routing is only available for an iOS Simulator.", true)),
+        None => None,
+    };
     // Android's 10.0.2.2 alias reaches the host loopback interface.
     let listen_host = "127.0.0.1";
     let strategy = if is_android {
         "android_adb_global_proxy"
+    } else if mac_proxy_lease.is_some() {
+        "ios_mac_network_proxy"
     } else {
         "ios_manual_proxy"
     };
@@ -678,73 +709,8 @@ async fn connect_device(
         .map_err(capture_error_to_app_error)?;
 
     let mut previous_android_proxy = None;
+    let mut proxy_apply_attempted = false;
     let connection_result: Result<ConnectDeviceResult, AppError> = async {
-        let mut diagnostics = Vec::new();
-        if is_android {
-            let provider = AndroidDeviceProvider;
-            previous_android_proxy = provider
-                .get_http_proxy(&device_id)
-                .map_err(device_error_to_app_error)?;
-            let journal = RollbackJournal {
-                schema_version: SCHEMA_VERSION,
-                device_id: device_id.clone(),
-                platform: DevicePlatform::Android,
-                session_id: session_id.clone(),
-                previous_android_proxy: previous_android_proxy.clone(),
-                ios_ca_installed: false,
-            };
-            save_rollback_journal(&state.rollback_path, &journal)?;
-            provider
-                .set_http_proxy(&device_id, ANDROID_HOST_ALIAS, DEFAULT_CAPTURE_PORT)
-                .map_err(device_error_to_app_error)?;
-            diagnostics.push(ConnectionDiagnostic {
-                code: "android_ca_trust_guided".into(),
-                title: "HTTPS trust may require app configuration".into(),
-                message: "The emulator is routed through Mobile API Studio. HTTPS interception also requires the app to trust the mitmproxy CA.".into(),
-                recoverable: true,
-                suggested_action: Some(
-                    "For development builds, trust user-added CAs with Android network security configuration, or install the CA manually from mitm.it. Certificate-pinned apps require an app-side debug path rather than proxy bypassing."
-                        .into(),
-                ),
-            });
-        } else {
-            let certificate = wait_for_certificate(&state.capture_engine.certificate_path()).await?;
-            let journal = RollbackJournal {
-                schema_version: SCHEMA_VERSION,
-                device_id: device_id.clone(),
-                platform: DevicePlatform::Ios,
-                session_id: session_id.clone(),
-                previous_android_proxy: None,
-                ios_ca_installed: true,
-            };
-            save_rollback_journal(&state.rollback_path, &journal)?;
-            IosDeviceProvider
-                .install_root_ca(&device_id, &certificate)
-                .map_err(device_error_to_app_error)?;
-            diagnostics.push(ConnectionDiagnostic {
-                code: "ios_proxy_manual_configuration".into(),
-                title: "Configure the Simulator proxy manually".into(),
-                message: format!(
-                    "The capture engine is listening on 127.0.0.1:{DEFAULT_CAPTURE_PORT}, but Mobile API Studio does not change macOS/iOS proxy settings automatically."
-                ),
-                recoverable: true,
-                suggested_action: Some(
-                    "Route the Simulator through the local proxy for this session. The app intentionally avoids changing system-wide macOS proxy settings automatically."
-                        .into(),
-                ),
-            });
-            diagnostics.push(ConnectionDiagnostic {
-                code: "ios_ca_full_trust_required".into(),
-                title: "Enable full trust for the capture CA".into(),
-                message: "The CA was added to the Simulator root store; recent iOS versions can still require enabling full trust in Certificate Trust Settings.".into(),
-                recoverable: true,
-                suggested_action: Some(
-                    "In the Simulator open Settings → General → About → Certificate Trust Settings and enable full trust for the mitmproxy certificate."
-                        .into(),
-                ),
-            });
-        }
-
         let session = CaptureSession {
             schema_version: SCHEMA_VERSION,
             id: session_id.clone(),
@@ -774,12 +740,79 @@ async fn connect_device(
             .create_session(&session)
             .map_err(|error| AppError::storage(error.to_string()))?;
 
+        let mut diagnostics = Vec::new();
+        if is_android {
+            let provider = AndroidDeviceProvider;
+            previous_android_proxy = provider
+                .get_http_proxy(&device_id)
+                .map_err(device_error_to_app_error)?;
+            let journal = RollbackJournal {
+                schema_version: SCHEMA_VERSION,
+                device_id: device_id.clone(),
+                platform: DevicePlatform::Android,
+                session_id: session_id.clone(),
+                previous_android_proxy: previous_android_proxy.clone(),
+                ios_ca_installed: false,
+                mac_proxy_lease: None,
+            };
+            save_rollback_journal(&state.rollback_path, &journal)?;
+            provider
+                .set_http_proxy(&device_id, ANDROID_HOST_ALIAS, DEFAULT_CAPTURE_PORT)
+                .map_err(device_error_to_app_error)?;
+            diagnostics.push(ConnectionDiagnostic {
+                code: "android_ca_trust_guided".into(),
+                title: "HTTPS trust may require app configuration".into(),
+                message: "The emulator is routed through Mobile API Studio. HTTPS interception also requires the app to trust the mitmproxy CA.".into(),
+                recoverable: true,
+                suggested_action: Some(
+                    "For development builds, trust user-added CAs with Android network security configuration, or install the CA manually from mitm.it. Certificate-pinned apps require an app-side debug path rather than proxy bypassing."
+                        .into(),
+                ),
+            });
+        } else {
+            let certificate = wait_for_certificate(&state.capture_engine.certificate_path()).await?;
+            let journal = RollbackJournal {
+                schema_version: SCHEMA_VERSION,
+                device_id: device_id.clone(),
+                platform: DevicePlatform::Ios,
+                session_id: session_id.clone(),
+                previous_android_proxy: None,
+                ios_ca_installed: true,
+                mac_proxy_lease: mac_proxy_lease.clone(),
+            };
+            save_rollback_journal(&state.rollback_path, &journal)?;
+            IosDeviceProvider
+                .install_root_ca(&device_id, &certificate)
+                .map_err(device_error_to_app_error)?;
+            if let Some(lease) = &mac_proxy_lease {
+                proxy_apply_attempted = true;
+                mac_proxy::set_enabled(lease, true).await?;
+                diagnostics.push(ConnectionDiagnostic {
+                    code: "ios_automatic_setup_complete".into(),
+                    title: "Simulator setup complete".into(),
+                    message: "The capture CA is installed and the selected Mac network service routes HTTP/HTTPS through Mobile API Studio. Other proxy-aware Mac apps may also use this route.".into(),
+                    recoverable: true,
+                    suggested_action: Some("Disable routing to restore the previous network settings while keeping capture open. Certificate-pinned apps still need their own debug configuration.".into()),
+                });
+            } else {
+                diagnostics.push(ConnectionDiagnostic {
+                    code: "ios_proxy_manual_configuration".into(),
+                    title: "Simulator certificate installed; routing is manual".into(),
+                    message: "The root CA is installed. Route your app through 127.0.0.1:8181, or use the automatic Mac network routing option.".into(),
+                    recoverable: true,
+                    suggested_action: Some("If HTTPS reports a trust error, check Certificate Trust Settings in the Simulator. Pinned apps need an app-side debug configuration.".into()),
+                });
+            }
+        }
+
         let active = ActiveConnection {
             handle: handle.clone(),
             device_id: Some(device_id.clone()),
             target: session.capture_target.clone().expect("new capture session has a target"),
             strategy: strategy.into(),
             previous_android_proxy: previous_android_proxy.clone(),
+            mac_proxy_lease: mac_proxy_lease.clone(),
+            routing_enabled: mac_proxy_lease.is_some(),
             lan_guard: None,
             sdk_guard: None,
         };
@@ -794,29 +827,43 @@ async fn connect_device(
     .await;
 
     if let Err(original_error) = connection_result {
-        let rollback_error = if is_android && state.rollback_path.exists() {
-            restore_android_proxy(
-                &AndroidDeviceProvider,
-                &device_id,
-                previous_android_proxy.as_deref(),
-            )
-            .and_then(|_| clear_rollback_journal(&state.rollback_path))
-            .err()
-        } else {
-            None
-        };
-        let stop_error = state.capture_engine.stop(handle).await.err();
-        if let Some(rollback_error) = rollback_error {
-            return Err(AppError::new(
-                "connection_rollback_failed",
-                format!(
-                    "Connection failed: {}. Android proxy recovery also failed: {}",
-                    original_error.message, rollback_error.message
-                ),
-                true,
-            ));
+        if let Some(lease) = &mac_proxy_lease {
+            if proxy_apply_attempted {
+                let restored = if mac_proxy::can_release(lease).await.unwrap_or(false) { Ok(()) } else { mac_proxy::set_enabled(lease, false).await };
+                if let Err(recovery) = restored {
+                    // Keep a usable listener and connection: never strand routing on a closed proxy.
+                    *state.active_connection.lock().await = Some(ActiveConnection {
+                        handle: handle.clone(), device_id: Some(device_id.clone()),
+                        target: CaptureTarget { schema_version: SCHEMA_VERSION, kind: CaptureTargetKind::IosSimulator { device_id: device_id.clone() } },
+                        strategy: strategy.into(), previous_android_proxy: None,
+                        mac_proxy_lease: mac_proxy_lease.clone(), routing_enabled: true,
+                        lan_guard: None, sdk_guard: None,
+                    });
+                    return Err(AppError::new("connection_rollback_failed", format!("Setup failed: {}. Routing recovery failed: {}. Capture remains running; use Disable routing or Disconnect to retry.", original_error.message, recovery.message), true));
+                }
+            }
         }
+        let rollback_error = if is_android && state.rollback_path.exists() {
+            restore_android_proxy(&AndroidDeviceProvider, &device_id, previous_android_proxy.as_deref()).err()
+        } else { None };
+        if let Some(error) = &rollback_error {
+            *state.active_connection.lock().await = Some(ActiveConnection {
+                handle: handle.clone(), device_id: Some(device_id.clone()),
+                target: CaptureTarget { schema_version: SCHEMA_VERSION, kind: CaptureTargetKind::AndroidEmulator { device_id: device_id.clone() } },
+                strategy: strategy.into(), previous_android_proxy: previous_android_proxy.clone(),
+                mac_proxy_lease: None, routing_enabled: false, lan_guard: None, sdk_guard: None,
+            });
+            return Err(AppError::new("connection_rollback_failed", format!("Setup failed: {}. Proxy recovery failed: {}. Capture remains running; disconnect to retry.", original_error.message, error.message), true));
+        }
+        let stop_error = state.capture_engine.stop(handle.clone()).await.err();
         if let Some(stop_error) = stop_error {
+            *state.active_connection.lock().await = Some(ActiveConnection {
+                handle: handle.clone(), device_id: Some(device_id.clone()),
+                target: CaptureTarget { schema_version: SCHEMA_VERSION, kind: if is_android { CaptureTargetKind::AndroidEmulator { device_id: device_id.clone() } } else { CaptureTargetKind::IosSimulator { device_id: device_id.clone() } } },
+                strategy: strategy.into(), previous_android_proxy: previous_android_proxy.clone(),
+                mac_proxy_lease: mac_proxy_lease.clone(), routing_enabled: false,
+                lan_guard: None, sdk_guard: None,
+            });
             return Err(AppError::new(
                 "capture_cleanup_failed",
                 format!(
@@ -826,9 +873,25 @@ async fn connect_device(
                 true,
             ));
         }
+        clear_rollback_journal(&state.rollback_path)?;
+        state.database.complete_session(&session_id, &now_epoch_millis()?).map_err(|error| AppError::storage(error.to_string()))?;
         return Err(original_error);
     }
     connection_result
+}
+
+async fn set_ios_routing(enabled: bool, state: State<'_, AppState>) -> Result<ConnectionSnapshot, AppError> {
+    let _operation = state.connection_operation.lock().await;
+    let mut active = state.active_connection.lock().await.clone().ok_or_else(|| AppError::new("connection_not_active", "Start automatic Simulator capture first.", true))?;
+    let lease = active.mac_proxy_lease.as_ref().ok_or_else(|| AppError::new("manual_proxy_connection", "This capture uses manual routing.", true))?;
+    if enabled && !state.capture_engine.is_running(&active.handle).await {
+        return Err(AppError::new("capture_not_running", "The capture listener stopped. Disconnect before starting another session.", true));
+    }
+    mac_proxy::set_enabled(lease, enabled).await?;
+    active.routing_enabled = enabled;
+    let snapshot = connection_snapshot(&active);
+    *state.active_connection.lock().await = Some(active);
+    Ok(snapshot)
 }
 
 async fn disconnect_device(state: State<'_, AppState>) -> Result<ConnectionSnapshot, AppError> {
@@ -837,6 +900,12 @@ async fn disconnect_device(state: State<'_, AppState>) -> Result<ConnectionSnaps
     let Some(active) = active else {
         return Ok(disconnected_snapshot());
     };
+    if let Some(lease) = &active.mac_proxy_lease {
+        if let Err(error) = mac_proxy::set_enabled(lease, false).await {
+            if !mac_proxy::can_release(lease).await.unwrap_or(false) { return Err(error); }
+            // External settings no longer route to this listener; preserve them and disconnect safely.
+        }
+    }
     if let Some(device_id) = active
         .device_id
         .as_deref()
@@ -869,12 +938,17 @@ async fn disconnect_device(state: State<'_, AppState>) -> Result<ConnectionSnaps
     Ok(disconnected_snapshot())
 }
 
-async fn pending_rollback(state: State<'_, AppState>) -> Result<Option<RollbackJournal>, AppError> {
+async fn pending_rollback(state: State<'_, AppState>) -> Result<Option<serde_json::Value>, AppError> {
     let _operation = state.connection_operation.lock().await;
     if state.active_connection.lock().await.is_some() {
         return Ok(None);
     }
-    load_rollback_journal(&state.rollback_path)
+    Ok(load_rollback_journal(&state.rollback_path)?.map(|journal| serde_json::json!({
+        "schemaVersion": journal.schema_version, "deviceId": journal.device_id,
+        "platform": journal.platform, "sessionId": journal.session_id,
+        "previousAndroidProxy": journal.previous_android_proxy, "iosCaInstalled": journal.ios_ca_installed,
+        "macNetworkService": journal.mac_proxy_lease.as_ref().map(|lease| &lease.service_id),
+    })))
 }
 
 async fn recover_pending_rollback(
@@ -892,6 +966,13 @@ async fn recover_pending_rollback(
         return Ok(Vec::new());
     };
     let mut diagnostics = Vec::new();
+    if let Some(lease) = &journal.mac_proxy_lease {
+        if let Err(error) = mac_proxy::set_enabled(lease, false).await {
+            if !mac_proxy::can_release(lease).await.unwrap_or(false) { return Err(error); }
+        }
+        diagnostics.push(ConnectionDiagnostic { code: "mac_proxy_restored".into(), title: "Mac routing recovery complete".into(), message: "Original proxy settings were restored, or safe external changes were preserved.".into(), recoverable: true, suggested_action: None });
+    }
+
     match journal.platform {
         DevicePlatform::Android => {
             restore_android_proxy(
@@ -950,6 +1031,8 @@ fn connection_snapshot(active: &ActiveConnection) -> ConnectionSnapshot {
             _ => None,
         },
         capture_target: Some(active.target.clone()),
+        routing_enabled: active.mac_proxy_lease.as_ref().map(|_| active.routing_enabled),
+        mac_network_service: active.mac_proxy_lease.as_ref().map(|lease| lease.service_id.clone()),
     }
 }
 
@@ -963,6 +1046,8 @@ fn disconnected_snapshot() -> ConnectionSnapshot {
         proxy_host: None,
         proxy_port: None,
         capture_target: None,
+        routing_enabled: None,
+        mac_network_service: None,
     }
 }
 
@@ -1010,8 +1095,8 @@ async fn wait_for_certificate(path: &Path) -> Result<PathBuf, AppError> {
 fn save_rollback_journal(path: &Path, journal: &RollbackJournal) -> Result<(), AppError> {
     let bytes = serde_json::to_vec_pretty(journal)
         .map_err(|error| AppError::new("rollback_serialize_failed", error.to_string(), true))?;
-    fs::write(path, bytes)
-        .map_err(|error| AppError::new("rollback_write_failed", error.to_string(), true))
+    atomic_file::write_private(path, &bytes)
+        .map_err(|error| AppError::new("rollback_write_failed", format!("{error:?}"), true))
 }
 
 fn load_rollback_journal(path: &Path) -> Result<Option<RollbackJournal>, AppError> {
@@ -1090,6 +1175,7 @@ fn initialize_state(app_data_dir: PathBuf, addon_path: PathBuf) -> Result<AppSta
         capture_engine,
         active_connection: Mutex::new(None),
         connection_operation: Mutex::new(()),
+        shutting_down: std::sync::atomic::AtomicBool::new(false),
         rollback_path: app_data_dir.join("connection-rollback.json"),
         proxy_rule_diagnostics: Arc::new(StdMutex::new(VecDeque::new())),
         tls_diagnostics: Arc::new(StdMutex::new(RecentTlsDiagnostics::default())),
@@ -1186,11 +1272,26 @@ impl CoreService {
         command: &str,
         args: serde_json::Value,
     ) -> Result<serde_json::Value, AppError> {
+        if matches!(command, "setup_ios_simulator" | "set_ios_routing" | "connect_device" | "connect_capture_target" | "disconnect_device" | "recover_pending_rollback") {
+            // A browser reload may cancel its request while native authorization is open.
+            // Keep the entire transaction, lock and cleanup alive until it completes.
+            let state = self.state.clone();
+            let command = command.to_owned();
+            return tokio::spawn(async move { dispatch::invoke(&command, args, &state).await }).await
+                .map_err(|error| AppError::new("connection_operation_failed", error.to_string(), true))?;
+        }
         dispatch::invoke(command, args, &self.state).await
     }
 
     pub async fn shutdown(&self) -> Result<(), AppError> {
-        let result = disconnect_device(State(&self.state)).await.map(|_| ());
+        self.state.shutting_down.store(true, std::sync::atomic::Ordering::SeqCst);
+        let service = self.clone();
+        tokio::spawn(async move { service.finish_shutdown().await }).await
+            .map_err(|error| AppError::new("connection_shutdown_failed", error.to_string(), true))?
+    }
+
+    async fn finish_shutdown(&self) -> Result<(), AppError> {
+        disconnect_device(State(&self.state)).await?;
         if let Ok(mut guard) = self.state.rule_server_task.lock() {
             if let Some(task) = guard.take() { task.abort(); }
         }
@@ -1199,11 +1300,12 @@ impl CoreService {
             let _ = fs::remove_file(&self.state.rule_socket_path);
             if let Some(directory) = self.state.rule_socket_path.parent() { let _ = fs::remove_dir(directory); }
         }
-        result
+        Ok(())
     }
 }
 
 mod dispatch;
+mod mac_proxy;
 
 #[cfg(test)]
 mod certificate_wait_tests {
@@ -1272,4 +1374,51 @@ mod lan_guard_tests {
             guard.stop().await;
         });
     }
+}
+
+#[cfg(test)]
+mod ios_setup_journal_checks {
+    use super::*;
+    #[test]
+    fn legacy_journal_loads_and_browser_recovery_omits_private_backup() {
+        tokio::runtime::Builder::new_current_thread().enable_all().build().unwrap().block_on(async {
+            let legacy: RollbackJournal = serde_json::from_value(serde_json::json!({"schemaVersion": SCHEMA_VERSION, "deviceId": "ios:test", "platform": "ios", "sessionId": "fixture", "previousAndroidProxy": null, "iosCaInstalled": true})).unwrap();
+            assert!(legacy.mac_proxy_lease.is_none());
+            let dir = std::env::temp_dir().join(format!("mas-ios-journal-{}-{}", std::process::id(), now_epoch_millis().unwrap()));
+            let state = initialize_state(dir.clone(), resolve_addon_path().unwrap()).unwrap();
+            let mut journal = legacy;
+            journal.mac_proxy_lease = Some(mac_proxy::Lease { service_id: "fixture-service".into(), location_id: "fixture-location".into(), original: "PRIVATE-OPAQUE-SNAPSHOT".into(), had_configuration: false });
+            save_rollback_journal(&state.rollback_path, &journal).unwrap();
+            assert_eq!(load_rollback_journal(&state.rollback_path).unwrap().unwrap().mac_proxy_lease.unwrap().original, "PRIVATE-OPAQUE-SNAPSHOT");
+            let view = pending_rollback(State(&state)).await.unwrap().unwrap();
+            assert_eq!(view["macNetworkService"], "fixture-service");
+            assert!(!view.to_string().contains("PRIVATE-OPAQUE-SNAPSHOT"));
+            assert!(view.get("macProxyLease").is_none());
+            state.shutting_down.store(true, std::sync::atomic::Ordering::SeqCst);
+            let blocked = connect_device("ios:fixture".into(), None, State(&state)).await.unwrap_err();
+            assert_eq!(blocked.code, "service_shutting_down");
+            drop(state); fs::remove_dir_all(dir).unwrap();
+        });
+    }
+    #[test]
+    fn cancelled_browser_request_still_finishes_routing_recovery() {
+        tokio::runtime::Builder::new_current_thread().enable_all().build().unwrap().block_on(async {
+            let dir = std::env::temp_dir().join(format!("mas-ios-cancellation-{}-{}", std::process::id(), now_epoch_millis().unwrap()));
+            let core = CoreService { state: Arc::new(initialize_state(dir.clone(), resolve_addon_path().unwrap()).unwrap()) };
+            let journal: RollbackJournal = serde_json::from_value(serde_json::json!({"schemaVersion": SCHEMA_VERSION, "deviceId": "ios:test", "platform": "ios", "sessionId": "fixture", "previousAndroidProxy": null, "iosCaInstalled": true})).unwrap();
+            save_rollback_journal(&core.state.rollback_path, &journal).unwrap();
+            let held = core.state.connection_operation.lock().await;
+            let caller_core = core.clone();
+            let caller = tokio::spawn(async move { caller_core.invoke("recover_pending_rollback", serde_json::json!({})).await });
+            tokio::task::yield_now().await;
+            caller.abort();
+            assert!(caller.await.unwrap_err().is_cancelled());
+            drop(held);
+            tokio::time::timeout(Duration::from_secs(2), async {
+                while core.state.rollback_path.exists() { tokio::task::yield_now().await; }
+            }).await.expect("Recovery must survive cancellation of its browser caller");
+            drop(core); fs::remove_dir_all(dir).unwrap();
+        });
+    }
+
 }

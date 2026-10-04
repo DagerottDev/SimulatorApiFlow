@@ -62,6 +62,8 @@ export interface ConnectionSnapshot {
   proxyHost: string | null;
   proxyPort: number | null;
   captureTarget?: CaptureTarget | null;
+  routingEnabled?: boolean | null;
+  macNetworkService?: string | null;
 }
 
 export interface ConnectDeviceResult {
@@ -77,6 +79,7 @@ export interface RollbackJournal {
   sessionId: string;
   previousAndroidProxy: string | null;
   iosCaInstalled: boolean;
+  macNetworkService?: string | null;
 }
 
 export interface CaptureSession {

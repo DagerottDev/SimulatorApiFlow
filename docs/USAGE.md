@@ -17,16 +17,16 @@ To choose another UI port or a separate workspace:
 ./scripts/run-local.sh --port 8191 --data-dir /absolute/path/to/separate-workspace --no-open
 ```
 
-Changing `--port` changes only the UI port. Run one service per workspace; keep the legacy desktop app closed when using the same data. Stop with Ctrl+C to disconnect and restore supported Android proxy settings. Back up `app.db` before migrations with the service stopped. Default data locations and platform limits are in [Platform support](PLATFORM_SUPPORT.md).
+Changing `--port` changes only the UI port. Run one service per workspace; keep the legacy desktop app closed when using the same data. Stop with Ctrl+C to disconnect and restore supported Android or automatic Simulator proxy settings. Back up `app.db` before migrations with the service stopped. Default data locations and platform limits are in [Platform support](PLATFORM_SUPPORT.md).
 
 ## Capture your development app
 
 1. Boot a Simulator in Xcode or an Android Emulator, and run your development app.
-2. Open **Connect**, select the runtime, and follow the readiness and proxy/certificate guidance before connecting.
+2. Open **Connect** and select the runtime. For iOS, leave **Set up Mac network routing automatically** selected, choose the current Mac network service, and click **Set up Simulator & start capture**. Approve the standard macOS network authorization dialog if shown. For Android, follow its CA guidance and click **Start capture**.
 3. Generate requests in your app. Open **Traffic**, select the capture session, and inspect a request's headers, body, timing, TLS and errors.
-4. Disconnect when finished. Android's prior proxy is restored; remove any manually configured proxy when ending a manual workflow.
+4. For automatic iOS capture, **Disable routing** restores the previous Mac proxy settings without closing the capture session; **Enable routing** resumes routing. **Disconnect** restores supported settings and ends the session. Remove any manually configured proxy when ending a manual workflow.
 
-Simulator routing is manual. For an app you own, explicitly route its test URLSession through the proxy or use an appropriate reverse listener. The optional SDK adds context; it does not route every custom URLSession through a regular proxy automatically. Android API 37 local-network access also needs the appropriate application permission; a denial remains an error. HTTPS needs development CA trust in the test app/runtime. For Android, prefer app-scoped debug trust. Certificate pinning requires your app's debug configuration; there is no pinning bypass.
+Automatic Simulator setup installs the capture CA in the selected Simulator and temporarily sets HTTP/HTTPS proxies on the selected Mac network service. Other proxy-aware Mac apps may also be routed; their certificate trust is not changed. Active proxies/PAC block automatic setup. Uncheck automatic routing for manual setup: explicitly route a test URLSession you own through the proxy or use an appropriate reverse listener. See [Simulator setup](IOS_SIMULATOR_SETUP.md) for recovery and limitations. The optional SDK adds context; it does not route every custom URLSession through a regular proxy automatically. Android API 37 local-network access also needs the appropriate application permission; a denial remains an error. HTTPS needs development CA trust in the test app/runtime. For Android, prefer app-scoped debug trust. Certificate pinning requires your app's debug configuration; there is no pinning bypass.
 
 The [SDK integration guide](SDK_INTEGRATION.md) explains Swift/Kotlin setup, local ingestion addresses, and correlation. Enable instrumentation only in development. App-scoped network conditions need SDK attribution already available when the request starts; later Inspector context does not prove it was available then.
 

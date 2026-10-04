@@ -34,6 +34,9 @@ export function ConnectView({ onOpenTraffic, sharedConnection }: { onOpenTraffic
   const [pendingRollback, setPendingRollback] = useState<RollbackJournal | null>(null);
   const [doctor, setDoctor] = useState<ConnectionDoctorReport | null>(null);
   const [sessionName, setSessionName] = useState("");
+  const [automaticRouting, setAutomaticRouting] = useState(true);
+  const [networkServices, setNetworkServices] = useState<{id: string; name: string; isDefault: boolean}[]>([]);
+  const [networkServiceId, setNetworkServiceId] = useState("");
   const [platform, setPlatform] = useState<{os: string; localCapture: boolean; guidance: string}>({ os: "unknown", localCapture: false, guidance: "Checking native capture support…" });
   const [processes, setProcesses] = useState<MacProcess[]>([]);
   const [selectedProcessPid, setSelectedProcessPid] = useState<number | null>(null);
@@ -52,7 +55,7 @@ export function ConnectView({ onOpenTraffic, sharedConnection }: { onOpenTraffic
     setLoading(true);
     const targetErrors: string[] = [];
     try {
-      const [devices, current, rollback, report, discoveredProcesses, discoveredInterfaces, platformInfo] = await Promise.all([
+      const [devices, current, rollback, report, discoveredProcesses, discoveredInterfaces, platformInfo, macServices] = await Promise.all([
         invoke<DeviceDiscoveryPayload>("list_devices"),
         invoke<ConnectionSnapshot>("current_connection"),
         invoke<RollbackJournal | null>("pending_rollback"),
@@ -60,6 +63,7 @@ export function ConnectView({ onOpenTraffic, sharedConnection }: { onOpenTraffic
         invoke<MacProcess[]>("list_desktop_processes").catch((value) => { targetErrors.push(formatInvokeError(value)); return []; }),
         invoke<LanInterface[]>("list_lan_interfaces").catch((value) => { targetErrors.push(formatInvokeError(value)); return []; }),
         invoke<{os: string; localCapture: boolean; guidance: string}>("capture_platform_info"),
+        invoke<{id: string; name: string; isDefault: boolean}[]>("list_mac_network_services").catch((value) => { targetErrors.push(`Automatic Simulator routing: ${formatInvokeError(value)}`); return []; }),
       ]);
       setPayload(devices);
       setConnection(current);
@@ -67,6 +71,8 @@ export function ConnectView({ onOpenTraffic, sharedConnection }: { onOpenTraffic
       setDoctor(report);
       setProcesses(discoveredProcesses);
       setPlatform(platformInfo);
+      setNetworkServices(macServices);
+      setNetworkServiceId((id) => macServices.some((item) => item.id === id) ? id : (macServices.find((item) => item.isDefault) ?? macServices[0])?.id ?? "");
       setSelectedProcessPid((pid) => discoveredProcesses.some((process) => process.pid === pid) ? pid : discoveredProcesses[0]?.pid ?? null);
       setInterfaces(discoveredInterfaces);
       setSelectedInterface((name) => discoveredInterfaces.some((item) => item.name === name) ? name : discoveredInterfaces[0]?.name ?? "");
@@ -108,9 +114,11 @@ export function ConnectView({ onOpenTraffic, sharedConnection }: { onOpenTraffic
     setRecoveryDiagnostics([]);
     setActing(true);
     try {
-      const result = await invoke<ConnectDeviceResult>("connect_device", {
+      const automatic = selected.platform === "ios" && automaticRouting;
+      const result = await invoke<ConnectDeviceResult>(automatic ? "setup_ios_simulator" : "connect_device", {
         deviceId: selected.id,
         sessionName: sessionName.trim() || null,
+        ...(automatic ? { networkServiceId } : {}),
       });
       setConnection(result.connection);
       setConnectionDiagnostics(result.diagnostics);
@@ -146,6 +154,18 @@ export function ConnectView({ onOpenTraffic, sharedConnection }: { onOpenTraffic
     } finally {
       setActing(false);
     }
+  }
+
+  async function toggleRouting() {
+    if (connection.routingEnabled == null) return;
+    setActing(true);
+    try {
+      const enabled = !connection.routingEnabled;
+      setConnection(await invoke<ConnectionSnapshot>("set_ios_routing", { enabled }));
+      setConnectionDiagnostics([{ code: "ios_routing_changed", title: enabled ? "Routing enabled" : "Routing disabled", message: enabled ? "The selected Mac network service uses the capture proxy." : "The previous Mac proxy settings are restored. Capture remains running; enable routing to capture new requests again.", recoverable: true, suggestedAction: null }]);
+      setError(null);
+    } catch (value) { const message = formatInvokeError(value); await refresh(); setError(message); }
+    finally { setActing(false); }
   }
 
   async function disconnect() {
@@ -184,6 +204,11 @@ export function ConnectView({ onOpenTraffic, sharedConnection }: { onOpenTraffic
   }
 
   const allDiagnostics = [...payload.diagnostics, ...connectionDiagnostics, ...recoveryDiagnostics];
+  const routingControls = connection.macNetworkService ? <>
+    <div className="capability-row" role="status"><span>Mac network routing</span><strong>{connection.routingEnabled ? "Enabled" : "Disabled"}</strong></div>
+    <button className="secondary wide" onClick={() => void toggleRouting()} disabled={acting || (connection.captureRunning === false && !connection.routingEnabled)}>{acting ? "Updating routing…" : connection.routingEnabled ? "Disable routing" : "Enable routing"}</button>
+    <small>Routing off restores your previous proxy settings and keeps this capture session open.</small>
+  </> : null;
   const selectedReady = selected ? isReady(selected) : false;
 
   return (
@@ -276,7 +301,7 @@ export function ConnectView({ onOpenTraffic, sharedConnection }: { onOpenTraffic
             <strong>Interrupted connection detected.</strong>{" "}
             {pendingRollback.platform === "android"
               ? "The previous emulator proxy setting should be restored before another capture."
-              : "The previous Simulator session installed a local capture CA."}
+              : pendingRollback.macNetworkService ? "Restore the Mac network routing from the interrupted Simulator session." : "The previous Simulator session installed a local capture CA."}
             <button className="secondary compact" onClick={() => void recover()} disabled={acting}>
               Recover
             </button>
@@ -327,6 +352,7 @@ export function ConnectView({ onOpenTraffic, sharedConnection }: { onOpenTraffic
               {connection.proxyHost ? <div className="capability-row"><span>Listener</span><strong>{connection.proxyHost}:{connection.proxyPort}</strong></div> : null}
               {pairingToken ? <div className="capability-row"><span>SDK pairing token</span><code className="pairing-token">{pairingToken}</code></div> : null}
               <div className="capability-row"><span>Session</span><strong>{connection.sessionId}</strong></div>
+              {routingControls}
               <button className="secondary wide" onClick={() => void disconnect()} disabled={acting}>{acting ? "Disconnecting…" : "Disconnect capture"}</button>
               <button className="primary wide" onClick={onOpenTraffic}>Inspect traffic →</button>
             </div>
@@ -336,11 +362,11 @@ export function ConnectView({ onOpenTraffic, sharedConnection }: { onOpenTraffic
               <p>{selected.id}</p>
               <div className="capability-row">
                 <span>CA setup</span>
-                <strong>{selected.capabilities.canInstallCa ? "Automated + guided trust" : "Guided"}</strong>
+                <strong>{selected.capabilities.canInstallCa ? "Installed automatically" : "Guided"}</strong>
               </div>
               <div className="capability-row">
                 <span>Proxy routing</span>
-                <strong>{selected.capabilities.canAutoRouteProxy ? "Automated" : "Guided"}</strong>
+                <strong>{selected.platform === "ios" && automaticRouting ? "Automatic via Mac network" : selected.capabilities.canAutoRouteProxy ? "Automated" : "Guided"}</strong>
               </div>
 
               {connection.connected ? (
@@ -353,6 +379,7 @@ export function ConnectView({ onOpenTraffic, sharedConnection }: { onOpenTraffic
                     <span>Session</span>
                     <strong>{connection.sessionId}</strong>
                   </div>
+                  {routingControls}
                   <button className="secondary wide" onClick={() => void disconnect()} disabled={acting}>
                     {acting ? "Disconnecting…" : "Disconnect capture"}
                   </button>
@@ -369,12 +396,23 @@ export function ConnectView({ onOpenTraffic, sharedConnection }: { onOpenTraffic
                     onChange={(event) => setSessionName(event.target.value)}
                     disabled={acting}
                   />
+                  {selected.platform === "ios" ? <>
+                    <label className="inline-toggle"><input type="checkbox" checked={automaticRouting} disabled={acting} onChange={(event) => setAutomaticRouting(event.target.checked)} /> Set up Mac network routing automatically</label>
+                    {automaticRouting ? <>
+                      <label className="field-label" htmlFor="simulator-network-service">Mac network service</label>
+                      <select id="simulator-network-service" className="text-input" value={networkServiceId} disabled={acting || !networkServices.length} onChange={(event) => setNetworkServiceId(event.target.value)}>
+                        {!networkServices.length ? <option value="">No available network service</option> : null}
+                        {networkServices.map((service) => <option key={service.id} value={service.id}>{service.name}{service.isDefault ? " (current route)" : ""}</option>)}
+                      </select>
+                      <p className="muted-copy">Installs the Simulator CA and routes HTTP/HTTPS through the capture proxy. Other Mac apps may also use this route. Disable routing or disconnect to restore your previous settings. macOS may request administrator approval.</p>
+                    </> : <p className="muted-copy">Installs the Simulator CA; configure your app's proxy manually.</p>}
+                  </> : null}
                   <button
                     className="primary wide"
                     onClick={() => void connect()}
-                    disabled={!selectedReady || acting || Boolean(pendingRollback)}
+                    disabled={!selectedReady || acting || Boolean(pendingRollback) || (selected.platform === "ios" && automaticRouting && !networkServiceId)}
                   >
-                    {acting ? "Connecting…" : "Start capture"}
+                    {acting ? "Setting up capture…" : selected.platform === "ios" && automaticRouting ? "Set up Simulator & start capture" : "Start capture"}
                   </button>
                   {!selectedReady ? <small>Boot or start this runtime before connecting.</small> : null}
                 </>

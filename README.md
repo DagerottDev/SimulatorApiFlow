@@ -39,7 +39,7 @@ pnpm install --frozen-lockfile
 ./scripts/run-local.sh
 ```
 
-The command builds the React UI and JavaScript worker, starts the Rust service, and opens the local URL. Pass `--port 8190` to use another UI port. Capture and SDK ingestion remain on `8181` and `8182`. Stop the service with Ctrl+C so it can end capture and restore an Android proxy. Keep the earlier desktop app closed while using the same data directory. Windows uses `./scripts/run-local.ps1` in PowerShell. See the [usage guide](docs/USAGE.md) for isolated data directories, portable bundles, and CLI examples.
+The command builds the React UI and JavaScript worker, starts the Rust service, and opens the local URL. Pass `--port 8190` to use another UI port. Capture and SDK ingestion remain on `8181` and `8182`. Stop the service with Ctrl+C so it can end capture and restore supported Android or automatic Simulator proxy settings. Keep the earlier desktop app closed while using the same data directory. Windows uses `./scripts/run-local.ps1` in PowerShell. See the [usage guide](docs/USAGE.md) for isolated data directories, portable bundles, and CLI examples.
 
 Workspace data stays in the operating system data directory listed in the [platform support matrix](docs/PLATFORM_SUPPORT.md). Back up `app.db` before any future schema migration. Browser import uses a selected JSON file; export downloads a redacted workspace bundle. The service listens only on `127.0.0.1`, checks Host and Origin, and requires a process-lifetime token for commands. The token is held in browser memory, outside URLs and logs.
 
@@ -48,10 +48,11 @@ Workspace data stays in the operating system data directory listed in the [platf
 ## How capture works
 
 1. Boot an iOS Simulator or Android Emulator and open **Connect**.
-2. Review the readiness workbench in **Connect**, select the runtime, and start a session.
-3. Follow the runtime's proxy and development CA guidance, then use **Traffic**, **Replay**, **Mocks**, **Network**, and **Compare**.
+2. For iOS, select the booted Simulator and choose **Set up Simulator & start capture**. This installs its capture certificate and enables HTTP/HTTPS routing through the selected Mac network service. Approve macOS network authorization if prompted. Android uses **Start capture** with its own CA guidance.
+3. Generate traffic, then use **Traffic**, **Replay**, **Mocks**, **Network**, and **Compare**.
+4. Choose **Disable routing** to restore the previous Mac proxy settings while keeping the session open; **Enable routing** turns capture routing back on. **Disconnect** restores settings and ends capture.
 
-The iOS Simulator proxy is configured manually. Android Emulator proxy changes are journaled for rollback. Apps with certificate pinning need their own debug configuration; Mobile API Studio does not bypass pinning. Optional [iOS and Android SDKs](docs/SDK_INTEGRATION.md) add app context without requiring production instrumentation.
+Automatic Simulator routing can also affect proxy-aware Mac apps on that network service. The CA is installed only in the selected Simulator. Existing active proxies/PAC are preserved and block automatic setup; uncheck automatic routing to use a manual app-scoped workflow. Android Emulator proxy changes are journaled for rollback. See [Simulator setup](docs/IOS_SIMULATOR_SETUP.md) for scope, recovery and validation. Apps with certificate pinning need their own debug configuration; Mobile API Studio does not bypass pinning. Optional [iOS and Android SDKs](docs/SDK_INTEGRATION.md) add app context without requiring production instrumentation.
 
 ## For contributors
 
