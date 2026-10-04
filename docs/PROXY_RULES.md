@@ -1,5 +1,7 @@
 # Proxy rules — milestone 2
 
+> **Integrated on main:** This milestone is part of PRs #19–26. For current usage see [USAGE.md](USAGE.md); later acceptance and owner exclusions are in [ROADMAP_COMPLETION.md](ROADMAP_COMPLETION.md). Verification/pending lists below retain their original checkpoint scope.
+
 This change builds on capture targets. It is a macOS source implementation with focused loopback checks; physical-device, Simulator/Emulator, compatibility, and release acceptance remain owner-led. Use disposable data and separate ports when validating it.
 
 ## Rules and matching
@@ -50,12 +52,14 @@ pnpm build
 
 The live loopback check uses installed mitmdump, temporary origin/CA material, an isolated rule socket, and disposable ports. It checks TLS inspection, ordered passthrough, restoration after disabling rules, malformed matcher fail-closed behavior, HTTP/2 client negotiation when curl supports it, and terminal re-matching after both proxy and mock breakpoint edits. This is focused regression evidence, not device or release certification.
 
+Subsequent loopback clients passed reverse HTTP, upstream HTTP through a separate owned forwarding proxy, and SOCKS5 no-auth/CONNECT/HTTP against the integrated service. Each preserved exact binary request/response bytes, captured correlation IDs, correlation-header removal before origin/forwarder, rewrite headers and redacted rule audit records. Six invalid mode/URL/port inputs failed without creating a session. DNS UDP A/AAAA overrides and both address-family mismatch empty answers passed without inventing HTTP flows. Disconnect cleared rollback and released all listeners; all six recorded service/capture PIDs exited. The capture wrapper forced the resolver to loopback and disabled hosts-file resolution. Owned fallback on macOS remained unverified because binding UDP loopback port 53 returned permission error 13; no fallback query or system DNS change occurred. The initial runtime reached three HTTP passes, then rejected a dotted fixture rule ID; the single fixture retry replaced dots in IDs while retaining exact hostname matchers. Evidence: `/private/tmp/mas-listener-client-acceptance/{artifact-proof.json,run-xna9kpxy/evidence.json,run-0qtvutpm/evidence.json}`. This establishes controlled HTTP/1.1 clients and UDP overrides, not TLS/HTTP2 listeners, real SDK attribution or device routing.
+
 Owner-led acceptance still includes:
 
-1. Simulator/Emulator HTTP/1.1 and HTTP/2 rule interactions, replay, SDK correlation, AI redaction, and import/export regression.
-2. Map Local/Remote, rewrites, cookie/cache removal, conflicting rules, and request/response breakpoint behavior with real app traffic.
-3. Reverse/upstream/SOCKS5 routing and DNS A/AAAA override/fallback using clients configured for those modes.
+1. Extend the recorded Simulator HTTP/1.1 and HTTP/2 interactions to additional clients as needed. Five actual HTTP/2 phases passed ordered request/response rewrites, terminal block precedence, disable-all restoration and a response breakpoint, with exact bodies/audits/trailers and five SDK pairs. See [PLATFORM_ACCEPTANCE.md](PLATFORM_ACCEPTANCE.md).
+2. Extend the seven recorded actual Simulator mapping/rewrite/cookie/cache/conflict/breakpoint cases to broader app, protocol and rendered UI combinations; see [PLATFORM_ACCEPTANCE.md](PLATFORM_ACCEPTANCE.md).
+3. Extend the recorded reverse/upstream/SOCKS5 and DNS override checks to device/TLS clients; macOS/app-core/device DNS fallback remains unverified. macOS denied the owned port-53 bind. An isolated Docker fallback attempt also failed its DNS success assertion after startup; its exact cause remains unproven. The initial fixture interface-inventory assertion and one corrected retry are retained in `/private/tmp/mas-dns-fallback-docker/`; no further blind rerun or host DNS change occurred at that checkpoint. Both owned containers, their anonymous volumes and the test image were removed. A subsequent source-supported four-query diagnostic passed container-native fallback for A/AAAA on an example-domain hostname and separately confirmed .invalid NXDOMAIN without observed upstream queries. Raw packets and isolation proof are retained at `/private/tmp/mas-dns-fallback-diagnostic/`; the earlier unsaved packet is not retroactively diagnosed. macOS/app-core/device fallback acceptance remains open.
 4. Physical-device and Mac process capture, disconnect, interrupted-start recovery, and capture engine termination.
 5. Export preview contents and disabled imported rule review.
 
-Milestones 3–8 (protocol inspection, network conditions, compose/interchange, scripting/automation, hosted collaboration, and Windows/Linux) remain part of the expansion roadmap.
+At the milestone-2 checkpoint, milestones 3–8 remained in the expansion roadmap. Their source is now integrated in the stacked drafts; [ROADMAP_CHECKPOINT.md](ROADMAP_CHECKPOINT.md) and [PLATFORM_ACCEPTANCE.md](PLATFORM_ACCEPTANCE.md) record subsequent checks and remaining acceptance.

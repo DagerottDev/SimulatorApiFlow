@@ -1,5 +1,7 @@
 # Final Owner-Led Validation
 
+> **Current evidence:** This is the owner-led validation checklist, not a claim that every gate passed. The eight expansion milestones are integrated on main; [PLATFORM_ACCEPTANCE.md](PLATFORM_ACCEPTANCE.md) records bounded passes and [ROADMAP_COMPLETION.md](ROADMAP_COMPLETION.md) records owner-excluded/unverified checks. Start with [USAGE.md](USAGE.md).
+
 > This stage begins **after** implementation Phases 0–5. It is intentionally independent of the implementation phase gates.
 
 The repository owner controls how much of this is performed manually, with scripts, or with future automated tooling. This document does **not** add tests or CI by itself; it is a validation checklist and defect-triage guide.

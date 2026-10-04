@@ -128,6 +128,11 @@ pub enum CaptureEvent {
         code: String,
         message: String,
     },
+    TransportDiagnostic {
+        session_id: String,
+        code: String,
+        message: String,
+    },
     EngineFailed {
         code: String,
         message: String,

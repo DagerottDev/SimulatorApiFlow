@@ -1,10 +1,14 @@
 # Protocol inspection — milestone 3
 
+> **Integrated on main:** This milestone is part of PRs #19–26. For current usage see [USAGE.md](USAGE.md); later acceptance and owner exclusions are in [ROADMAP_COMPLETION.md](ROADMAP_COMPLETION.md). Verification/pending lists below retain their original checkpoint scope.
+
 This builds on capture targets and proxy rules. It extends the macOS localhost service and browser UI with focused loopback verification; device, compatibility and release acceptance remain owner-led.
 
 ## Capture and inspection
 
 Traffic stores HTTP versions, connection addresses and IDs, TLS/ALPN/cipher information, bounded public certificate metadata, and request/response trailers. The inspector shows gRPC status and message trailers. HTTP/2 stream priority and push promises are not exposed by the capture engine.
+
+Trailer capture depends on the underlying protocol implementation. An actual Simulator HTTP/1 chunked response with trailers timed out on mitmproxy 12.2.3. A six-request owned-origin diagnostic reproduced the failure without Mobile API Studio's addon or rules: direct clients decoded the exact body, ordinary Content-Length responses passed through the proxy, and trailer responses raised `NotImplementedError: HTTP trailers are not implemented yet` in mitmproxy. Closing the origin connection instead returned HTTP 502. HTTP/1 trailer support is therefore unavailable in that tested engine version; this does not invalidate the separately recorded native HTTP/2 trailer check or establish Simulator HTTP/2 acceptance. Evidence: `/private/tmp/mas-ios-rule-acceptance/diagnostic-only/data/{results.json,stdout.log,stderr.log,cleanup.json}`. No TLS validation, dependency version or production source was changed to bypass this limitation.
 
 WebSocket text, binary and empty messages keep their sequence, direction, opcode, timestamp and bounded body reference. Close metadata is retained. Payloads use the existing content-addressed body store, limited to 2 MiB. Mitmproxy retains only the current WebSocket message after the addon hook; an individual message can exceed the capture limit before truncation. Ping/pong payloads and WebSocket replay are unsupported by mitmproxy.
 
@@ -39,4 +43,6 @@ Exports redact known secret header/trailer values and omit correlation secrets, 
 4. Check HTTP/3 in Mac local mode and additional clients; the completed live check covers reverse mode only.
 5. Complete milestone 2 reverse/upstream/SOCKS/DNS client acceptance and release/platform compatibility checks.
 
-Milestones 4–8 remain in the full roadmap. This draft does not certify physical devices or a public release.
+At the milestone-3 checkpoint, milestones 4–8 were still pending. Their source implementation is now integrated in the stacked drafts; see [ROADMAP_CHECKPOINT.md](ROADMAP_CHECKPOINT.md) and [PLATFORM_ACCEPTANCE.md](PLATFORM_ACCEPTANCE.md) for current validation evidence and limits. Physical-device and public-release acceptance remain separate.
+
+Actual Simulator HTTP/2 body/trailer acceptance subsequently passed two verified-TLS URLSession requests. Native request/response HTTP/2.0, both-leg h2 ALPN/TLS, exact nine-byte frame hashes, grpc-status 0 and the owned response trailer, two SDK pairs and correlation stripping passed. Cleanup and unchanged original data/public CA passed. Display-only computer use showed the unchanged saved result after native cleanup. See [PLATFORM_ACCEPTANCE.md](PLATFORM_ACCEPTANCE.md) and `/private/tmp/mas-ios-http2-acceptance/`. Full gRPC transport and browser descriptor decoding remain separate.

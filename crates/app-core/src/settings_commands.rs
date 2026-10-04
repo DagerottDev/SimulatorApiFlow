@@ -104,10 +104,38 @@ pub struct WorkspaceExportResult {
     pub path: String,
 }
 
+fn tls_doctor_check(recent: &super::RecentTlsDiagnostics) -> Option<DoctorCheck> {
+    let (detail, action) = match (recent.client_failed, recent.server_failed) {
+        (false, false) => return None,
+        (true, false) => (
+            "A client TLS handshake failed during the most recent capture attempt. The exact cause is unproven.",
+            "Check the debug app's capture-CA trust and pinning policy. Pinned apps require an approved app-side debug configuration; TLS verification remains enabled.",
+        ),
+        (false, true) => (
+            "An upstream TLS handshake failed during the most recent capture attempt. The exact cause is unproven.",
+            "Check the upstream certificate's validity/trust and TLS compatibility; TLS verification remains enabled.",
+        ),
+        (true, true) => (
+            "Client and upstream TLS handshakes failed during the most recent capture attempt. The exact causes are unproven.",
+            "Check the debug app's capture-CA trust and pinning policy, and the upstream certificate's validity/trust and TLS compatibility; TLS verification remains enabled.",
+        ),
+    };
+    Some(DoctorCheck {
+        id: "recent-tls-handshake".into(),
+        title: "Recent TLS handshake failure".into(),
+        status: DoctorStatus::Warning,
+        detail: detail.into(),
+        action: Some(action.into()),
+    })
+}
+
 pub async fn connection_doctor(
     state: State<'_, AppState>,
 ) -> Result<ConnectionDoctorReport, AppError> {
     let mut checks = Vec::new();
+    if let Some(check) = state.tls_diagnostics.lock().ok().and_then(|recent| tls_doctor_check(&recent)) {
+        checks.push(check);
+    }
 
     let ios_provider = IosDeviceProvider;
     let ios_devices = if ios_provider.is_available() {
@@ -1194,6 +1222,51 @@ mod tests {
                 drop(state);
                 fs::remove_dir_all(data_dir).unwrap();
             });
+    }
+
+    #[test]
+    fn tls_doctor_warning_is_bounded_and_scoped_to_the_latest_attempt() {
+        let mut recent = crate::RecentTlsDiagnostics::default();
+        recent.record("old", "tls_client_handshake_failed");
+        assert!(tls_doctor_check(&recent).is_none());
+        recent.begin_session("first");
+        recent.record("old", "tls_client_handshake_failed");
+        recent.record("first", "private-host-and-error");
+        assert!(tls_doctor_check(&recent).is_none());
+        for _ in 0..100 {
+            recent.record("first", "tls_client_handshake_failed");
+        }
+        let check = tls_doctor_check(&recent).unwrap();
+        assert_eq!(check.status, DoctorStatus::Warning);
+        assert!(check.detail.contains("client TLS"));
+        assert!(check.detail.contains("most recent capture attempt"));
+        assert!(check.detail.contains("unproven"));
+        assert!(check.action.unwrap().contains("verification remains enabled"));
+        recent.record("first", "tls_server_handshake_failed");
+        assert!(tls_doctor_check(&recent).unwrap().detail.contains("Client and upstream"));
+        // Starting an attempt resets before its first event; late previous-reader events stay ignored.
+        recent.begin_session("second");
+        recent.record("first", "tls_client_handshake_failed");
+        assert!(tls_doctor_check(&recent).is_none());
+        recent.record("second", "tls_server_handshake_failed");
+        assert!(tls_doctor_check(&recent).unwrap().detail.contains("upstream TLS"));
+        assert_eq!(recent.session_id.as_deref(), Some("second"));
+        recent.begin_session("third");
+        assert!(tls_doctor_check(&recent).is_none());
+    }
+
+    #[test]
+    fn tls_transport_diagnostics_do_not_fabricate_http_flows() {
+        let root = std::env::temp_dir().join(format!("mas-tls-diagnostic-{}-{}", std::process::id(), now_epoch_millis().unwrap()));
+        let database = storage::Database::open(root.join("app.db")).unwrap();
+        let bodies = storage::BodyStore::new(root.join("bodies")).unwrap();
+        crate::inspect::ingest_capture_event(&database, &bodies, capture_core::CaptureEvent::TransportDiagnostic {
+            session_id: "test-session".into(), code: "tls_client_handshake_failed".into(),
+            message: "A client TLS handshake failed; the exact cause is unproven.".into(),
+        }).unwrap();
+        assert!(database.is_empty().unwrap());
+        assert!(database.list_sessions(10).unwrap().is_empty());
+        fs::remove_dir_all(root).unwrap();
     }
 
     #[test]
