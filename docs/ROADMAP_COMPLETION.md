@@ -1,0 +1,18 @@
+# Original roadmap completion review
+
+This review compares the original eight-milestone attachment with the integrated source and recorded acceptance evidence. All eight milestones have reviewable implementations in stacked draft PRs #19–26. No additional unconditional source deliverable was identified as missing. This is source completion, not a claim that every original platform/device completion gate passed or that a release occurred.
+
+| Original milestone | Current evidence | Gate still requiring a target or access |
+| --- | --- | --- |
+| 1 Capture targets | Simulator/Emulator HTTP(S), SDK attribution, paired LAN guards and interrupted-session recovery passed. | Selected Mac process and a physical HTTP(S) device remain unverified. Mac Network Extension setup was explicitly excluded by the owner. The latest device inventory found only simulated Apple devices and no ADB devices. |
+| 2 Proxy rules | Ordered Simulator HTTP/1 cases and actual HTTP/2 rewrites, block precedence, disable-all restoration and response breakpoint passed exact bytes/audits/trailers/SDK pairing. Listener clients, DNS overrides and container-native fallback passed. | App-core/device DNS fallback and additional TLS listener clients remain narrower limits. |
+| 3 Protocols | Actual Simulator HTTP/2 frame/trailers, WebSockets and retained/exported history, native descriptor decoding, supported reverse HTTP/3 and bounded body viewers passed. | Rendered descriptor Decode is blocked by a saved localhost browser permission. Tested HTTP/1 trailers are unsupported by mitmproxy 12.2.3. |
+| 4 Network conditions | Measured rates/jitter, scope precedence, strict gated Simulator/Android timing and disable-all passed. | Native/physical target coverage follows the platform gates. Packet loss is conditional on mode support and is explicitly unavailable when unsupported. |
+| 5 Compose/interchange | Replay, individually recorded bounded repeats, open-format parsing/roundtrip and atomic malformed-import preservation passed. | Native Charles/Proxyman adapters remain conditional on reliable version documentation and representative fixtures, as the original plan specifies. |
+| 6 Scripting/automation | Bounded isolated worker/hooks, visible failures, disabled imports and authenticated CLI/MCP checks passed. | Native Windows execution follows milestone 8. |
+| 7 Sharing/team workspace | Explicit exact-preview upload, expiry/revocation, roles and revision-CAS sync passed locally. Sign-in alone starts no capture/sync. | External deployment and production TLS are release choices; no external traffic upload or deployment occurred. |
+| 8 Windows/Linux | Windows GNU cross-build, Linux ARM64 Docker/x86-64 Cloud userspace build/package/runtime and credential-store checks passed. | Native Windows capture/replay/rules/import/recovery/Credential Manager and Linux host capture/Android integration require suitable targets. |
+
+The recorded per-app Simulator routes work; default/global Simulator routing and automatic custom-session regular-proxy limitations remain separately documented. Cross-builds and userspace containers do not substitute for native platform acceptance. All bounded fixture claims, retained failures and cleanup proofs are in [PLATFORM_ACCEPTANCE.md](PLATFORM_ACCEPTANCE.md).
+
+Merging drafts, signing/distribution and external deployment are separate owner actions. Broad UI/performance certification, full gRPC client implementation, native-format export, unsupported packet loss, paid AI-provider calls and background team sync are not added completion requirements. Historical Phases 0–5 remain implementation-complete without retroactive formal-test claims.
