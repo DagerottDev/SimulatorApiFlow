@@ -42,3 +42,5 @@ Exports redact known secret header/trailer values and omit correlation secrets, 
 5. Complete milestone 2 reverse/upstream/SOCKS/DNS client acceptance and release/platform compatibility checks.
 
 At the milestone-3 checkpoint, milestones 4–8 were still pending. Their source implementation is now integrated in the stacked drafts; see [ROADMAP_CHECKPOINT.md](ROADMAP_CHECKPOINT.md) and [PLATFORM_ACCEPTANCE.md](PLATFORM_ACCEPTANCE.md) for current validation evidence and limits. Physical-device and public-release acceptance remain separate.
+
+Actual Simulator HTTP/2 body/trailer acceptance subsequently passed two verified-TLS URLSession requests. Native request/response HTTP/2.0, both-leg h2 ALPN/TLS, exact nine-byte frame hashes, grpc-status 0 and the owned response trailer, two SDK pairs and correlation stripping passed. Cleanup and unchanged original data/public CA passed. Display-only computer use showed the unchanged saved result after native cleanup. See [PLATFORM_ACCEPTANCE.md](PLATFORM_ACCEPTANCE.md) and `/private/tmp/mas-ios-http2-acceptance/`. Full gRPC transport and browser descriptor decoding remain separate.
