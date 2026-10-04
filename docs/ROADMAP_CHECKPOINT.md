@@ -1,4 +1,4 @@
-# Roadmap checkpoint — 2026-10-03
+# Roadmap checkpoint — 2026-10-04
 
 The full eight-milestone roadmap remains authorized. Separate milestone worktrees, stacked draft PRs, disposable data and loopback ports preserve the original macOS release checkout and its validation record. No host-wide proxy settings were changed. The owner explicitly authorized continuing to the five-hour usage limit of 100% for this run, overriding the normal 80% reserve.
 
@@ -73,3 +73,5 @@ Small/medium/large history observations passed native reads and bounded browser 
 Eight actual Simulator protocol/body cases passed native byte/correlation/SDK/descriptor/error validation. Browser PNG/XML/GraphQL/form/multipart presentation passed; browser gRPC Decode remains unverified because the owned service hold expired before completion. All owned services/app stopped and original data/public CA stayed unchanged. Evidence: /private/tmp/mas-ios-protocol-bodies/. TLS-specific Doctor diagnostics, default/global routing and broader acceptance remain open.
 
 The observed pre-HTTP TLS Doctor gap is fixed with bounded, sanitized, nonfatal recent-attempt diagnostics. All31 app-core/capture-mitm checks and the release build passed. Actual Simulator direct/trusted positives, client distrust, upstream HTTP502 and different-leaf pin rejection passed five SDK pairs, Doctor warning/retention/reset and capture-stays-running checks; Device Hub showed completion. Owned cleanup and original data/public CA preservation passed. Evidence: /private/tmp/mas-ios-tls-doctor/. Browser gRPC/Doctor rendering remains blocked by a saved permission setting despite explicit owner approvals; no workaround occurred.
+
+The committed TLS fix (`cf90587`) also passed 30 Linux ARM64 userspace tests and addon syntax validation in an isolated Debian 12/Rust 1.90 Docker environment. The additional macOS test is platform-gated. Owned test container/image cleanup passed; no host mounts or network during tests. Evidence: /private/tmp/mas-linux-tls-check/. This does not establish Linux GUI/live TLS or host eBPF acceptance. All eight stacked draft PRs #19–26 remain open with their expected bases; no merge or release occurred.

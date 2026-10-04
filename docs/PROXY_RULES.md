@@ -58,4 +58,4 @@ Owner-led acceptance still includes:
 4. Physical-device and Mac process capture, disconnect, interrupted-start recovery, and capture engine termination.
 5. Export preview contents and disabled imported rule review.
 
-Milestones 3–8 (protocol inspection, network conditions, compose/interchange, scripting/automation, hosted collaboration, and Windows/Linux) remain part of the expansion roadmap.
+At the milestone-2 checkpoint, milestones 3–8 remained in the expansion roadmap. Their source is now integrated in the stacked drafts; [ROADMAP_CHECKPOINT.md](ROADMAP_CHECKPOINT.md) and [PLATFORM_ACCEPTANCE.md](PLATFORM_ACCEPTANCE.md) record subsequent checks and remaining acceptance.

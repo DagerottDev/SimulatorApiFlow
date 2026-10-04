@@ -30,9 +30,9 @@ The complete manually instrumented, persisted-attribution-gated Simulator matrix
 
 ## Owner-led acceptance still pending
 
-1. Measure profiles in Simulator/Emulator and physical-device HTTP(S) capture; repeat recovery, Replay, SDK and import regressions.
+1. Extend the recorded Simulator and Android Emulator profile/recovery/Replay/SDK/import checks to physical-device HTTP(S) and remaining cases; see [PLATFORM_ACCEPTANCE.md](PLATFORM_ACCEPTANCE.md) for exact completed scopes.
 2. Extend the now-passed gated Simulator overlapping/concurrent profile cases to physical devices and automatic attribution scenarios consistent with the best-effort SDK contract.
 3. Validate large bodies, supported HTTP/2/HTTP/3 capture modes and the explicit streaming/WebSocket/packet-loss limits.
 4. Validate packaged entry points, keyboard/accessibility and release compatibility. Current automated loopback checks exercise the localhost service and browser UI.
 
-Milestones 5–8 and earlier device/release acceptance remain separate work.
+At the milestone-4 checkpoint, milestones 5–8 were separate work. Their source is now integrated in the stacked drafts; [ROADMAP_CHECKPOINT.md](ROADMAP_CHECKPOINT.md) records current status. Broader device/release acceptance remains separate.
