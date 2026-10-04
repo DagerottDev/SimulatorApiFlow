@@ -50,11 +50,13 @@ pnpm build
 
 The live loopback check uses installed mitmdump, temporary origin/CA material, an isolated rule socket, and disposable ports. It checks TLS inspection, ordered passthrough, restoration after disabling rules, malformed matcher fail-closed behavior, HTTP/2 client negotiation when curl supports it, and terminal re-matching after both proxy and mock breakpoint edits. This is focused regression evidence, not device or release certification.
 
+Subsequent loopback clients passed reverse HTTP, upstream HTTP through a separate owned forwarding proxy, and SOCKS5 no-auth/CONNECT/HTTP against the integrated service. Each preserved exact binary request/response bytes, captured correlation IDs, correlation-header removal before origin/forwarder, rewrite headers and redacted rule audit records. Six invalid mode/URL/port inputs failed without creating a session. DNS UDP A/AAAA overrides and both address-family mismatch empty answers passed without inventing HTTP flows. Disconnect cleared rollback and released all listeners; all six recorded service/capture PIDs exited. The capture wrapper forced the resolver to loopback and disabled hosts-file resolution. Owned fallback on macOS remained unverified because binding UDP loopback port 53 returned permission error 13; no fallback query or system DNS change occurred. The initial runtime reached three HTTP passes, then rejected a dotted fixture rule ID; the single fixture retry replaced dots in IDs while retaining exact hostname matchers. Evidence: `/private/tmp/mas-listener-client-acceptance/{artifact-proof.json,run-xna9kpxy/evidence.json,run-0qtvutpm/evidence.json}`. This establishes controlled HTTP/1.1 clients and UDP overrides, not TLS/HTTP2 listeners, real SDK attribution or device routing.
+
 Owner-led acceptance still includes:
 
 1. Simulator/Emulator HTTP/1.1 and HTTP/2 rule interactions, replay, SDK correlation, AI redaction, and import/export regression.
-2. Map Local/Remote, rewrites, cookie/cache removal, conflicting rules, and request/response breakpoint behavior with real app traffic.
-3. Reverse/upstream/SOCKS5 routing and DNS A/AAAA override/fallback using clients configured for those modes.
+2. Extend the seven recorded actual Simulator mapping/rewrite/cookie/cache/conflict/breakpoint cases to broader app, protocol and rendered UI combinations; see [PLATFORM_ACCEPTANCE.md](PLATFORM_ACCEPTANCE.md).
+3. Extend the recorded reverse/upstream/SOCKS5 and DNS override checks to device/TLS clients; DNS fallback remains unverified. macOS denied the owned port-53 bind. An isolated Docker fallback attempt also failed its DNS success assertion after startup; its exact cause remains unproven. The initial fixture interface-inventory assertion and one corrected retry are retained in `/private/tmp/mas-dns-fallback-docker/`; no further rerun or host DNS change occurred. Both owned containers, their anonymous volumes and the test image were removed.
 4. Physical-device and Mac process capture, disconnect, interrupted-start recovery, and capture engine termination.
 5. Export preview contents and disabled imported rule review.
 
