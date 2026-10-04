@@ -244,8 +244,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     if open_browser {
         let _ = platform::open_browser(&url);
     }
+    let shutdown_core = core.clone();
     axum::serve(listener, app)
-        .with_graceful_shutdown(async {
+        .with_graceful_shutdown(async move {
+          loop {
             #[cfg(unix)]
             {
                 if let Ok(mut terminate) =
@@ -260,6 +262,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             {
                 let _ = tokio::signal::ctrl_c().await;
             }
+            match shutdown_core.shutdown().await {
+                Ok(()) => break,
+                Err(error) => eprintln!("Routing recovery failed: {}. The service remains running; disable routing or disconnect in Connect, then retry shutdown.", error.message),
+            }
+          }
         })
         .await?;
     #[cfg(unix)]

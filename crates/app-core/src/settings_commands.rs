@@ -1209,6 +1209,8 @@ mod tests {
                     },
                     strategy: "ios_manual_proxy".into(),
                     previous_android_proxy: None,
+                    mac_proxy_lease: None,
+                    routing_enabled: false,
                     lan_guard: None,
                     sdk_guard: None,
                 });

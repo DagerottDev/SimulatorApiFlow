@@ -4,7 +4,7 @@ Mobile API Studio is a source-built localhost service with a browser UI. It does
 
 | Host | Local service and browser UI | Secure environment storage | iOS Simulator | Android Emulator | Local CLI/MCP |
 | --- | --- | --- | --- | --- | --- |
-| macOS | Source build, localhost checks, and portable bundle exercised; bounded Simulator/Emulator checks passed; excluded targets and release remain unverified | Keychain | HTTPS, explicitly configured non-loopback HTTP and reverse HTTP passed with manual SDK enrichment; actual verified-TLS reverse HTTP/2 frame/trailer checks also passed; automatic regular-proxy integration remains open | Local API 37 ARM emulator HTTP/HTTPS, SDK and proxy recovery passed with app-scoped CA trust; physical acceptance owner-excluded/unverified | Unix control socket |
+| macOS | Source build, localhost checks, and portable bundle exercised; bounded Simulator/Emulator checks passed; excluded targets and release remain unverified | Keychain | HTTPS, explicitly configured non-loopback HTTP and reverse HTTP passed with manual SDK enrichment; actual verified-TLS reverse HTTP/2 frame/trailer checks also passed; one-click CA setup and default URLSession HTTPS routing on/off/on passed in the [follow-up check](IOS_SIMULATOR_SETUP.md); SDK regular-proxy integration remains separate | Local API 37 ARM emulator HTTP/HTTPS, SDK and proxy recovery passed with app-scoped CA trust; physical acceptance owner-excluded/unverified | Unix control socket |
 | Windows | Full GNU cross-build passed; native runtime and release are unverified | Windows Credential Manager | Not available | Intended through Android Platform Tools; unverified | Current-user named pipe |
 | Linux | ARM64 Docker and x86-64 Cloud build, portable bundle and userspace runtime checks passed; host capture and release remain unverified | Unavailable sessions fail closed; an isolated unlocked GNOME Keyring session passed synthetic set/get/delete | Not available | Intended through Android Platform Tools; unverified | Unix control socket |
 
@@ -36,7 +36,7 @@ The default data directories are:
 - Windows: `%LOCALAPPDATA%\dev.mobileapistudio.desktop`
 - Linux: `$XDG_DATA_HOME/dev.mobileapistudio.desktop`, or `~/.local/share/dev.mobileapistudio.desktop` when `XDG_DATA_HOME` is unset or relative
 
-Back up `app.db` before any schema migration. Stop the service normally so it can end capture and restore an Android Emulator proxy. After a forced stop, use the pending rollback recovery control before starting another capture.
+Back up `app.db` before any schema migration. Stop the service normally so it can end capture and restore supported Android or automatic Simulator proxy settings. After a forced stop, use the pending rollback recovery control before starting another capture.
 
 ## Portable bundle
 
