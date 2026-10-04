@@ -1,6 +1,6 @@
 # Security and Privacy
 
-> **Status:** this document reflects security/privacy boundaries implemented through v0.5. Formal security testing and release review are still part of the deferred owner-led validation/release stage.
+> **Status:** this document reflects security/privacy boundaries implemented through v0.5 and the eight expansion milestones. Formal security testing and release review are still part of the deferred owner-led validation/release stage.
 
 Mobile API Studio can handle authentication headers, cookies, test/customer payloads, local proxy configuration, a development CA, SDK metadata, and optional external AI requests. These boundaries are therefore part of product architecture, not optional cleanup.
 
@@ -17,7 +17,7 @@ By default, these remain on the developer machine:
 - deterministic comparison results;
 - AI result history.
 
-Data leaves the machine only through an explicit user action such as normal request Replay to a target server, workspace export, or an optional AI send after preview.
+Data leaves the machine only through an explicit user action such as normal request Replay to a target server, workspace export, an optional AI send after preview, or an explicitly reviewed sharing upload/team publication.
 
 ## 2. Capture CA policy
 
@@ -103,7 +103,7 @@ Future retention controls such as per-host “do not store body” can be added 
 
 Secret values use the OS credential-store abstraction rather than ordinary SQLite values.
 
-Current macOS secure-store usage includes:
+Secure-store usage (Keychain on macOS, Credential Manager on Windows, Secret Service on Linux) includes:
 
 - secret environment variables;
 - OpenAI/BYOK API key.
@@ -174,7 +174,7 @@ When a client rejects the interception CA:
 
 ### Browser UI and control API
 
-The source-built service binds to `127.0.0.1:8180` by default. `--port` changes only this listener. API commands use a process-lifetime random token in a request header, not a URL. Host and Origin checks reject unexpected web origins, and responses carry restrictive browser headers. Browser import/export uses local file selection and downloads; the existing bundle redaction rules still apply. Other processes running as the same macOS user remain within the local trust boundary.
+The source-built service binds to `127.0.0.1:8180` by default. `--port` changes only this listener. API commands use a process-lifetime random token in a request header, not a URL. Host and Origin checks reject unexpected web origins, and responses carry restrictive browser headers. Browser import/export uses local file selection and downloads; the existing bundle redaction rules still apply. Other processes running as the same host user remain within the local trust boundary.
 
 ### Capture
 
@@ -249,3 +249,13 @@ The following are not claimed as formally tested yet and should be explicitly re
 - Keychain secret deletion/update behavior.
 
 See [FINAL_VALIDATION.md](FINAL_VALIDATION.md) for the owner-led validation stage.
+
+## 17. Expanded capture, scripting and sharing
+
+Desktop/process capture requires explicit scope and platform permissions; paired LAN capture binds only the selected private interface and device address. Pairing secrets and CA private material are excluded from ordinary exports. The browser command API remains loopback-only. Physical device trust/proxy changes are manual; Mac process setup and physical acceptance were excluded from this run.
+
+Script hooks run in disposable bounded QuickJS processes without host APIs, not an OS sandbox. Failures stop the affected flow. Imported scripts remain disabled. General exports omit script source; explicit script exports require review because source can contain user-entered secrets. Local CLI/MCP enforces peer identity and an allowlist and does not expose arbitrary commands, AI calls or credential-store access.
+
+Sharing is opt-in: sign-in reads identity only, and uploads transmit the exact reviewed selected HAR bytes with bounded expiry/revocation. Query/body inclusion is explicit. Known secrets and internal headers are filtered, but arbitrary secrets in free-form bodies cannot be detected reliably. Active share links are bearer secrets. Revocation clears accessible artifact bytes; SQLite/backups may retain prior pages, so it is not secure erasure. Remote hosting needs owner-provided TLS and token-safe logging. Manual team publish uses revision compare-and-swap; imports create disabled rules with fresh IDs and exclude scripts, local-file actions and credential/CA material. See the [sharing service contract](../apps/sharing-server/README.md).
+
+Later focused security/runtime checks are in [PLATFORM_ACCEPTANCE.md](PLATFORM_ACCEPTANCE.md). The historical checklist above remains a broader release-review checklist; bounded passes do not constitute a formal security audit or platform certification.

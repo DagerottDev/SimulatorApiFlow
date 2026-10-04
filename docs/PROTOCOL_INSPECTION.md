@@ -1,5 +1,7 @@
 # Protocol inspection — milestone 3
 
+> **Integrated on main:** This milestone is part of PRs #19–26. For current usage see [USAGE.md](USAGE.md); later acceptance and owner exclusions are in [ROADMAP_COMPLETION.md](ROADMAP_COMPLETION.md). Verification/pending lists below retain their original checkpoint scope.
+
 This builds on capture targets and proxy rules. It extends the macOS localhost service and browser UI with focused loopback verification; device, compatibility and release acceptance remain owner-led.
 
 ## Capture and inspection

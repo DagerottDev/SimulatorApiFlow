@@ -1,5 +1,7 @@
 # Selected sharing and team workspace
 
+> **Integrated on main:** This milestone is part of PRs #19–26. For current usage see [USAGE.md](USAGE.md); later acceptance and owner exclusions are in [ROADMAP_COMPLETION.md](ROADMAP_COMPLETION.md). Verification/pending lists below retain their original checkpoint scope.
+
 Sharing is optional. The Sharing page stores an issued access token in memory only; sign-in reads membership without starting capture, uploading local data, or syncing. The self-hosted server has one team per deployment with owner/editor/viewer roles. Owners manage members and token rotation; owners/editors publish artifacts and definitions; viewers read. The last owner cannot be removed or demoted.
 
 ## Review and upload

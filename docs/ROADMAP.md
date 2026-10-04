@@ -180,17 +180,28 @@ Defects found during validation should become focused validation/fix issues rath
 
 ---
 
-# Deferred post-v0.5 product scope
+# Expansion roadmap — integrated on main
 
-Intentionally not part of the completed v0.5 roadmap:
+The subsequent eight-milestone expansion is integrated through PRs #19–26:
 
-- physical iOS/Android devices
-- Windows/Linux desktop builds
-- team/cloud synchronization
-- gRPC inspector
-- HTTP/3-specific tooling
-- deeper OpenAPI workflows
-- plugin marketplace
-- production APM integration
-- hosted traffic sharing
-- public release/update infrastructure
+| Milestone | Delivered capability | Documentation |
+| --- | --- | --- |
+| 1 — #19 | Desktop/process and paired physical-device capture targets | [Capture targets](CAPTURE_TARGETS.md) |
+| 2 — #20 | Ordered proxy rules and manual listener modes | [Proxy rules](PROXY_RULES.md) |
+| 3 — #21 | Protocol/body inspection and persistent WebSocket history | [Protocol inspection](PROTOCOL_INSPECTION.md) |
+| 4 — #22 | Scoped network conditions and recovery controls | [Network conditions](NETWORK_CONDITIONS.md) |
+| 5 — #23 | Compose, bounded repeats and open-format interchange | [Compose/interchange](COMPOSE_INTERCHANGE.md) |
+| 6 — #24 | Bounded JavaScript hooks and private CLI/MCP automation | [Scripting/automation](SCRIPTING_AUTOMATION.md) |
+| 7 — #25 | Reviewed sharing and manual team workspace sync | [Sharing](SHARING_WORKSPACE.md) |
+| 8 — #26 | Windows/Linux service portability and relocatable packaging | [Platform support](PLATFORM_SUPPORT.md) |
+
+This expansion does not change the original Phases 0–5 implementation/testing history. Later focused checks and runtime cases are recorded in [PLATFORM_ACCEPTANCE.md](PLATFORM_ACCEPTANCE.md); the [completion review](ROADMAP_COMPLETION.md) distinguishes passed cases from owner-excluded checks and conditional adapters. Start with the [usage guide](USAGE.md).
+
+# Deferred product scope
+
+- deeper OpenAPI workflows;
+- plugin marketplace;
+- production APM integration;
+- public signed installer, release/update infrastructure and release certification.
+
+Implementation of an additional target or protocol is not proof of compatibility with every host, device or client. Physical devices, Mac process setup, native Windows/Linux capture targets and the final rendered gRPC/Doctor check remain unverified after owner exclusion from this acceptance run.

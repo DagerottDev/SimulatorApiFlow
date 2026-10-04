@@ -1,5 +1,7 @@
 # Compose and interchange — milestone 5
 
+> **Integrated on main:** This milestone is part of PRs #19–26. For current usage see [USAGE.md](USAGE.md); later acceptance and owner exclusions are in [ROADMAP_COMPLETION.md](ROADMAP_COMPLETION.md). Verification/pending lists below retain their original checkpoint scope.
+
 This branch is based on the network-conditions milestone. Source checks passed. Browser, native/device and release acceptance remain owner-led.
 
 The request editor can start blank, edit a captured/saved request, replace headers and URL/query, edit raw/JSON/form/multipart text or a binary/base64 body, and save a draft into an existing collection. Editing the complete URL edits query parameters. Multipart field helpers handle text fields; arbitrary multipart payloads can be supplied as a complete binary body with an explicit boundary/content type.

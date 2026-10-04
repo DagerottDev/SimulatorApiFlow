@@ -1,5 +1,7 @@
 # Proxy rules — milestone 2
 
+> **Integrated on main:** This milestone is part of PRs #19–26. For current usage see [USAGE.md](USAGE.md); later acceptance and owner exclusions are in [ROADMAP_COMPLETION.md](ROADMAP_COMPLETION.md). Verification/pending lists below retain their original checkpoint scope.
+
 This change builds on capture targets. It is a macOS source implementation with focused loopback checks; physical-device, Simulator/Emulator, compatibility, and release acceptance remain owner-led. Use disposable data and separate ports when validating it.
 
 ## Rules and matching

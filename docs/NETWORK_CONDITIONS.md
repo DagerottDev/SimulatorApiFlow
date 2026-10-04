@@ -1,5 +1,7 @@
 # Network conditions — milestone 4
 
+> **Integrated on main:** This milestone is part of PRs #19–26. For current usage see [USAGE.md](USAGE.md); later acceptance and owner exclusions are in [ROADMAP_COMPLETION.md](ROADMAP_COMPLETION.md). Verification/pending lists below retain their original checkpoint scope.
+
 The localhost service and browser UI support persisted global, app, host and endpoint profiles. One enabled profile wins: endpoint, host, app, global; then ascending priority, numeric creation time and ID. Host matching ignores case; endpoint paths match exactly without the query. App attribution uses already ingested SDK events and their registered app ID. Automatic SDK telemetry is best-effort: eventual Inspector context does not prove that an app identity was available when the profile was selected. A request without that attribution can select a broader profile; it retains that initial snapshot. Missing or ambiguous attribution does not match an app profile; no arbitrary request header is trusted as an app identity.
 
 Profiles add request latency with uniform ±jitter, a nonnegative delay floor, buffered upload/download rate simulation, offline behavior and configurable request failure percentage. Offline/failure stops the request and keeps an inspectable error. These are application request failures, not transport packet loss. DNS, encrypted passthrough and ongoing WebSocket messages are outside these HTTP body profiles.

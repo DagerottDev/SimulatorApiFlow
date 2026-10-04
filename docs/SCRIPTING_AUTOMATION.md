@@ -1,5 +1,7 @@
 # Scripting and local automation
 
+> **Integrated on main:** This milestone is part of PRs #19–26. For current usage see [USAGE.md](USAGE.md); later acceptance and owner exclusions are in [ROADMAP_COMPLETION.md](ROADMAP_COMPLETION.md). Verification/pending lists below retain their original checkpoint scope.
+
 Script hooks are optional ordered proxy rules. New rules and imported scripts are disabled until the user enables them. Request hooks run with request rewrites; response hooks run after the upstream response; WebSocket hooks run on each matched message. Terminal rules retain their existing precedence. A script failure stops its flow and records `script_hook_failed` in the flow and rule diagnostics.
 
 ## Script contract

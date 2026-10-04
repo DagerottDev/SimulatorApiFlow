@@ -1,5 +1,7 @@
 # Capture targets — milestone 1
 
+> **Integrated on main:** This milestone is part of PRs #19–26. For current usage see [USAGE.md](USAGE.md); later acceptance and owner exclusions are in [ROADMAP_COMPLETION.md](ROADMAP_COMPLETION.md). Verification/pending lists below retain their original checkpoint scope.
+
 This is a macOS-first source implementation. Device and release validation remain owner-led. Keep the localhost release's data directory and ports separate when checking this milestone; use a disposable `--data-dir` and UI port.
 
 ## Targets and connection behavior

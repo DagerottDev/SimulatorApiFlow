@@ -1,17 +1,19 @@
 # Roadmap checkpoint — 2026-10-04
 
+> **Current status:** PRs #19–26 are merged into `main`. See [USAGE.md](USAGE.md) for the integrated workflows and [ROADMAP_COMPLETION.md](ROADMAP_COMPLETION.md) for acceptance limits. Entries below retain the implementation and validation history before that owner-authorized merge.
+
 The full eight-milestone roadmap remains authorized. Separate milestone worktrees, stacked draft PRs, disposable data and loopback ports preserve the original macOS release checkout and its validation record. No host-wide proxy settings were changed. The owner explicitly authorized continuing to the five-hour usage limit of 100% for this run, overriding the normal 80% reserve.
 
 | Milestone | Reviewable source | Verification record |
 | --- | --- | --- |
-| 1 Capture targets | Draft #19 | CAPTURE_TARGETS.md |
-| 2 Proxy rules | Draft #20 | PROXY_RULES.md |
-| 3 Protocol inspection | Draft #21 | PROTOCOL_INSPECTION.md |
-| 4 Network conditions | Draft #22 | NETWORK_CONDITIONS.md |
-| 5 Compose/interchange | Draft #23 | COMPOSE_INTERCHANGE.md |
-| 6 Scripting/automation | Draft #24 | SCRIPTING_AUTOMATION.md and SCRIPTING_CHECKPOINT.md |
-| 7 Hosted sharing/team workspace | Draft #25 | SHARING_WORKSPACE.md |
-| 8 Platform support | Draft #26 | PLATFORM_SUPPORT.md |
+| 1 Capture targets | PR #19 | CAPTURE_TARGETS.md |
+| 2 Proxy rules | PR #20 | PROXY_RULES.md |
+| 3 Protocol inspection | PR #21 | PROTOCOL_INSPECTION.md |
+| 4 Network conditions | PR #22 | NETWORK_CONDITIONS.md |
+| 5 Compose/interchange | PR #23 | COMPOSE_INTERCHANGE.md |
+| 6 Scripting/automation | PR #24 | SCRIPTING_AUTOMATION.md and SCRIPTING_CHECKPOINT.md |
+| 7 Hosted sharing/team workspace | PR #25 | SHARING_WORKSPACE.md |
+| 8 Platform support | PR #26 | PLATFORM_SUPPORT.md |
 
 Milestones 6–8 are integrated in the platform branch. Final macOS integration passed 24 app-core checks, 10 local-service checks, worker limit checks, frontend production build, Windows CLI mocked DLL/peer-auth checks, actual relocated bundle assets and CLI discovery, workspace exclusivity, graceful shutdown and idle forced-stop restart. The final portable bundle passed real request/response/WebSocket script hooks and the measured network-profile regression (baseline 0.093s; 64 KiB/s up/down plus 200ms: 1.220s; disable-all released a waiting request in 0.350s). Each command uses disposable data and synthetic loopback traffic. Native Charles/Proxyman imports remain conditional on documented versions and representative fixtures; unsupported formats recommend HAR.
 
@@ -89,3 +91,5 @@ The original roadmap was audited against the integrated source; no unconditional
 Owner scope update: “No connected physical devices ignore, Unavailable native Windows/Linux capture targets this like we ignored for mac” explicitly excludes those checks, alongside the earlier Mac setup exclusion. They remain unverified rather than failed or passed. The Linux metadata-only feasibility probe was stopped after read-only kernel/helper inspection; no privileged helper, host capture or new capabilities were enabled. The owner requested another exact localhost permission question for browser gRPC Decode. A fresh disposable copy of eight retained synthetic flows was prepared at http://127.0.0.1:55660; complete saved flow details exactly match retained evidence. Renewed exact approval and a subsequent owner-reported clearing of the block both still produced the same saved-permission rejection. A specific Settings → Browser follow-up was requested; no browser workaround occurred. The first preparation left a SQLite connection open and failed the copied-database exclusivity guard; its failed artifacts and nonmatching source journal/hash check are retained, not claimed successful. The corrected copy uses file copies without opening the original database and preserves before/after hashes.
 
 Final owner decision: “Exclude rendered check and finalize” explicitly removes the remaining browser gRPC/Connection Doctor check from this run after the matching-denial removal still produced a saved-permission rejection. Native decoding and Doctor runtime evidence remain valid; rendered results are not claimed passed. The owned fixed-address service stopped (exec31835 exit0); corrected-run database/WAL/body hashes stayed unchanged and eight copied flow details matched retained evidence. All eight draft PRs were rechecked open with their correct stack bases. Current production source is unchanged since cf90587; subsequent commits only update documentation. The exact native/addon bundle hashes match retained TLS-runtime proof, and the current addon matches that bundle. Final source/scope audit and owner exclusions are in ROADMAP_COMPLETION.md. No merge, release, external deployment or new host security access occurred.
+
+Main integration: the owner requested merging the completed PR stack and deleting obsolete branches. The main history preserves all eight milestones; the README, usage guide, architecture, privacy and roadmap documentation describe the integrated service. Prior exclusions remain unverified and are not release certification.

@@ -1,6 +1,6 @@
 # Original roadmap completion review
 
-This review compares the original eight-milestone attachment with the integrated source and recorded acceptance evidence. All eight milestones have reviewable implementations in stacked draft PRs #19–26. No additional unconditional source deliverable was identified as missing. The owner subsequently excluded physical-device and native Windows/Linux capture checks, alongside the already excluded Mac setup, and explicitly instructed “Exclude rendered check and finalize” for the remaining browser gRPC/Connection Doctor check. These exclusions change the required acceptance scope; they do not turn unverified environments into passing results or constitute a release.
+This review compares the original eight-milestone attachment with the integrated source and recorded acceptance evidence. All eight milestones are integrated on `main` through PRs #19–26. The owner explicitly authorized merging them and cleaning up obsolete branches after the acceptance decision. No additional unconditional source deliverable was identified as missing. The owner subsequently excluded physical-device and native Windows/Linux capture checks, alongside the already excluded Mac setup, and explicitly instructed “Exclude rendered check and finalize” for the remaining browser gRPC/Connection Doctor check. These exclusions change the required acceptance scope; they do not turn unverified environments into passing results or constitute a release.
 
 | Original milestone | Current evidence | Remaining limits and owner exclusions |
 | --- | --- | --- |
@@ -15,10 +15,14 @@ This review compares the original eight-milestone attachment with the integrated
 
 The recorded per-app Simulator routes work; default/global Simulator routing and automatic custom-session regular-proxy limitations remain separately documented. Cross-builds and userspace containers do not substitute for native platform acceptance. All bounded fixture claims, retained failures and cleanup proofs are in [PLATFORM_ACCEPTANCE.md](PLATFORM_ACCEPTANCE.md).
 
-Merging drafts, signing/distribution and external deployment are separate owner actions. Broad UI/performance certification, full gRPC client implementation, native-format export, unsupported packet loss, paid AI-provider calls and background team sync are not added completion requirements. Historical Phases 0–5 remain implementation-complete without retroactive formal-test claims.
+The owner authorized the main integration after this acceptance review. Signing/distribution and external deployment remain separate owner actions. Broad UI/performance certification, full gRPC client implementation, native-format export, unsupported packet loss, paid AI-provider calls and background team sync are not added completion requirements. Historical Phases 0–5 remain implementation-complete without retroactive formal-test claims.
 
 ## Final owner-scoped acceptance decision
 
-The owner instructed finalization with the physical-device, native Windows/Linux capture-target, Mac setup and remaining rendered browser checks excluded. Those results remain unverified. All eight source milestones are preserved as open, correctly stacked draft PRs #19–26. The final scope audit checks the original deliverables against source and retained validation evidence; it does not add an installer, merge, external deployment or release certification.
+The owner instructed finalization with the physical-device, native Windows/Linux capture-target, Mac setup and remaining rendered browser checks excluded. Those results remain unverified. All eight source milestones are preserved in the merged history of PRs #19–26. The final scope audit checks the original deliverables against source and retained validation evidence; it does not add an installer, merge, external deployment or release certification.
 
 The renewed browser service stopped successfully after the owner exclusion. Eight copied canonical flow details matched retained evidence; corrected-run original database/WAL/body hashes stayed unchanged. The initial SQLite-copy lock failure and nonmatching journal/hash check remain retained separately. Evidence: `/private/tmp/mas-protocol-ui-renewed/{retained-data-proof.json,before-hashes.json,cleanup.json}` and `/private/tmp/mas-protocol-ui-renewed-initial-failure/`. No capture, device trust, host proxy or permission workaround occurred.
+
+## Main integration and usage
+
+The owner subsequently requested the merge, obsolete-branch cleanup and documentation update. Merge commits preserve the eight-milestone ancestry. The [README](../README.md) and [usage guide](USAGE.md) cover source startup, capture routing/trust, new workflows, automation, opt-in sharing and portable bundles. Merging source does not certify the excluded checks or publish an installer. Historical checkpoint statements below or in other records describe their original dates.

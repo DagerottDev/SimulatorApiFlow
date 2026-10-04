@@ -1,12 +1,12 @@
 # Architecture
 
-> **As-built status:** v0.5 domain features and the localhost migration are implemented. Owner-led device and migration validation remains open.
+> **As-built status:** v0.5, the localhost migration and the eight expansion milestones are integrated on main. Bounded validation and owner-excluded checks are recorded in [PLATFORM_ACCEPTANCE.md](PLATFORM_ACCEPTANCE.md) and [ROADMAP_COMPLETION.md](ROADMAP_COMPLETION.md).
 
 ## 1. System overview
 
 ```text
 ┌──────────────────────────────────────────────────────────────┐
-│ Browser at http://127.0.0.1:8180 (React, nine routes)        │
+│ Browser at http://127.0.0.1:8180 (React, eleven routes)        │
 │ POST /api/invoke + process-lifetime header token             │
 └──────────────────────────────┬───────────────────────────────┘
                                │
@@ -61,7 +61,7 @@ It does not directly:
 
 ### Localhost service and application core
 
-`apps/local-server` serves the built UI, checks loopback Host and same-origin requests, and exposes an explicit command allowlist. `crates/app-core` owns state and all 71 task workflows, bridging the UI to focused Rust crates. Connection-changing operations are serialized across tabs:
+`apps/local-server` serves the built UI, checks loopback Host and same-origin requests, and exposes an explicit command allowlist. `crates/app-core` owns state and allowlisted application workflows, bridging the UI to focused Rust crates. Connection-changing operations are serialized across tabs:
 
 - connect/disconnect;
 - capture/session lifecycle;
@@ -124,7 +124,7 @@ Reusable workspace logic such as interpolation, export/diagnostic data structure
 
 ### `secret-store`
 
-OS credential-store abstraction. The current macOS implementation uses Keychain. Secret values are not persisted in normal SQLite fields.
+OS credential-store abstraction. macOS uses Keychain, Windows uses Credential Manager, and Linux uses Secret Service; unavailable secure-store sessions fail closed. Secret values are not persisted in normal SQLite fields.
 
 ### `replay`
 
@@ -388,3 +388,13 @@ The UI queries the same task-oriented command names through one typed HTTP adapt
 ## 15. Validation status
 
 Architecture and product code through Phase 5 are implemented, but formal validation is intentionally outside the phase gates. See [FINAL_VALIDATION.md](FINAL_VALIDATION.md) for the owner-led validation stage.
+
+## Expansion boundaries
+
+The browser adds Network and Sharing routes; ordered proxy rules live in Mocks, Compose/interchange in Replay, and Connection Doctor and workspace recovery in Settings. Capture metadata includes protocol/TLS/trailers and persisted WebSocket messages. Network profiles and proxy rules are snapshot-selected for matching traffic, with explicit disable/recovery controls.
+
+The service launches a separate bounded QuickJS worker for script hooks. It supplies no JavaScript filesystem/network/OS APIs; this is process isolation, not an OS sandbox. Private CLI/MCP control uses a peer-authenticated Unix socket or current-user Windows named pipe, separate from the browser token and SDK ingestion.
+
+The optional sharing server is a separate Unix deployment and database. Sharing transport originates in the native application core, requires explicit selected preview/upload, and checks roles and workspace revisions. Sign-in starts no capture/sync; imported team rules receive fresh IDs and remain disabled. See [sharing setup](../apps/sharing-server/README.md).
+
+Windows/Linux adapters and portable asset discovery support the localhost service. Cross-compilation and container userspace checks do not establish native capture compatibility. The source launcher and portable bundle include the worker; mitmdump and device tools remain external prerequisites. See [Platform support](PLATFORM_SUPPORT.md).
