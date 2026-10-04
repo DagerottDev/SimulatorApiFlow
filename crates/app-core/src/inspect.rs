@@ -125,6 +125,7 @@ pub fn ingest_capture_event(
             .upsert_flow(&flow)
             .map_err(|error| AppError::storage(error.to_string())),
         CaptureEvent::FlowFailed { .. }
+        | CaptureEvent::TransportDiagnostic { .. }
         | CaptureEvent::LifecycleChanged(_)
         | CaptureEvent::EngineReady(_)
         | CaptureEvent::EngineFailed { .. }

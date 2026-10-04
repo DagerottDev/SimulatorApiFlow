@@ -404,6 +404,9 @@ impl CaptureEngine for MitmDumpEngine {
 #[serde(tag = "type", rename_all = "snake_case")]
 enum BridgeEvent {
     EngineStarted,
+    TransportDiagnostic {
+        code: String,
+    },
     FlowCompleted {
         id: String,
         started_at: String,
@@ -513,6 +516,18 @@ fn publish_bridge_event(
 ) {
     match event {
         BridgeEvent::EngineStarted => {}
+        BridgeEvent::TransportDiagnostic { code } => {
+            let message = match code.as_str() {
+                "tls_client_handshake_failed" => "A client TLS handshake failed; the exact cause is unproven.",
+                "tls_server_handshake_failed" => "An upstream TLS handshake failed; the exact cause is unproven.",
+                _ => return,
+            };
+            let _ = sender.send(CaptureEvent::TransportDiagnostic {
+                session_id: session_id.into(),
+                code,
+                message: message.into(),
+            });
+        }
         BridgeEvent::FlowCompleted {
             id,
             started_at,
@@ -892,6 +907,64 @@ fn now_epoch_millis() -> u128 {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn tls_transport_diagnostics_use_native_session_and_fixed_messages() {
+        let (sender, mut receiver) = broadcast::channel(4);
+        for (code, expected) in [
+            ("tls_client_handshake_failed", "A client TLS handshake failed; the exact cause is unproven."),
+            ("tls_server_handshake_failed", "An upstream TLS handshake failed; the exact cause is unproven."),
+        ] {
+            let event = serde_json::from_value::<BridgeEvent>(serde_json::json!({
+                "type": "transport_diagnostic", "code": code,
+                "session_id": "spoofed", "message": "private-host/certificate/raw-error",
+            })).unwrap();
+            publish_bridge_event(&sender, "native-session", event);
+            assert_eq!(receiver.try_recv().unwrap(), CaptureEvent::TransportDiagnostic {
+                session_id: "native-session".into(), code: code.into(), message: expected.into(),
+            });
+        }
+        publish_bridge_event(&sender, "native-session", BridgeEvent::TransportDiagnostic { code: "private-unknown-code".into() });
+        assert!(matches!(receiver.try_recv(), Err(broadcast::error::TryRecvError::Empty)));
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn tls_addon_diagnostics_are_allowlisted_deduplicated_and_observational() {
+        let addon = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../sidecars/mitm-addon/mas_bridge.py");
+        let script = r#"
+import ast, json, sys, types, weakref
+names = {"_tls_handshake_diagnostic", "tls_failed_client", "tls_failed_server"}
+source = ast.parse(open(sys.argv[1], encoding="utf-8").read())
+functions = [n for n in source.body if isinstance(n, ast.FunctionDef) and n.name in names]
+records = []
+policies = weakref.WeakKeyDictionary()
+namespace = {"tls": types.SimpleNamespace(TlsData=object), "_TLS_POLICIES": policies,
+    "_TLS_DIAGNOSTICS_EMITTED": set(), "_emit": records.append}
+exec(compile(ast.Module(body=functions, type_ignores=[]), "tls-diagnostic-check", "exec"), namespace)
+class Client: pass
+client = Client()
+data = types.SimpleNamespace(context=types.SimpleNamespace(client=client),
+    conn=types.SimpleNamespace(error="private-host/certificate/raw-error"), ssl_conn=object())
+before = dict(vars(data))
+namespace["_tls_handshake_diagnostic"](data, "unknown-private-code")
+policies[client] = {"failed": True}
+namespace["tls_failed_client"](data)
+assert not records
+policies.clear()
+for _ in range(100):
+    namespace["tls_failed_client"](data)
+    namespace["tls_failed_server"](data)
+assert records == [
+    {"type":"transport_diagnostic", "code":"tls_client_handshake_failed", "message":"A client TLS handshake failed; the exact cause is unproven."},
+    {"type":"transport_diagnostic", "code":"tls_server_handshake_failed", "message":"An upstream TLS handshake failed; the exact cause is unproven."}]
+assert len(namespace["_TLS_DIAGNOSTICS_EMITTED"]) == 2
+assert vars(data) == before
+assert "private-host" not in json.dumps(records)
+"#;
+        let output = std::process::Command::new("python3").args(["-I", "-c", script]).arg(addon).output().unwrap();
+        assert!(output.status.success(), "{}", String::from_utf8_lossy(&output.stderr));
+    }
 
     #[test]
     fn websocket_addon_events_reach_capture_subscribers() {

@@ -80,6 +80,7 @@ struct AppState {
     connection_operation: Mutex<()>,
     rollback_path: PathBuf,
     proxy_rule_diagnostics: Arc<StdMutex<VecDeque<ProxyRuleDiagnostic>>>,
+    tls_diagnostics: Arc<StdMutex<RecentTlsDiagnostics>>,
     #[cfg(unix)]
     rule_socket_path: PathBuf,
     #[cfg(windows)]
@@ -109,6 +110,30 @@ struct LanGuard {
 struct ProxyRuleDiagnostic {
     code: String,
     message: String,
+}
+
+#[derive(Debug, Default)]
+struct RecentTlsDiagnostics {
+    session_id: Option<String>,
+    client_failed: bool,
+    server_failed: bool,
+}
+
+impl RecentTlsDiagnostics {
+    fn begin_session(&mut self, session_id: &str) {
+        *self = Self { session_id: Some(session_id.into()), ..Self::default() };
+    }
+
+    fn record(&mut self, session_id: &str, code: &str) {
+        if self.session_id.as_deref() != Some(session_id) {
+            return;
+        }
+        match code {
+            "tls_client_handshake_failed" => self.client_failed = true,
+            "tls_server_handshake_failed" => self.server_failed = true,
+            _ => {}
+        }
+    }
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -461,6 +486,9 @@ async fn connect_capture_target(
         schema_version: SCHEMA_VERSION,
         kind: mode,
     };
+    if let Ok(mut diagnostics) = state.tls_diagnostics.lock() {
+        diagnostics.begin_session(&session_id);
+    }
     let handle = state
         .capture_engine
         .start(CaptureConfig {
@@ -632,6 +660,9 @@ async fn connect_device(
     } else {
         "ios_manual_proxy"
     };
+    if let Ok(mut diagnostics) = state.tls_diagnostics.lock() {
+        diagnostics.begin_session(&session_id);
+    }
     let handle = state
         .capture_engine
         .start(CaptureConfig {
@@ -1002,12 +1033,17 @@ fn clear_rollback_journal(path: &Path) -> Result<(), AppError> {
     Ok(())
 }
 
-fn spawn_capture_ingestion(database: Database, body_store: BodyStore, engine: Arc<MitmDumpEngine>, diagnostics: Arc<StdMutex<VecDeque<ProxyRuleDiagnostic>>>) {
+fn spawn_capture_ingestion(database: Database, body_store: BodyStore, engine: Arc<MitmDumpEngine>, diagnostics: Arc<StdMutex<VecDeque<ProxyRuleDiagnostic>>>, tls_diagnostics: Arc<StdMutex<RecentTlsDiagnostics>>) {
     let mut receiver = engine.subscribe();
     tokio::spawn(async move {
         loop {
             match receiver.recv().await {
                 Ok(event) => {
+                    if let capture_core::CaptureEvent::TransportDiagnostic { session_id, code, .. } = &event {
+                        if let Ok(mut recent) = tls_diagnostics.lock() {
+                            recent.record(session_id, code);
+                        }
+                    }
                     if let capture_core::CaptureEvent::EngineFailed { code, .. } = &event {
                         if code.starts_with("proxy_rule") || code == "script_hook_failed" {
                             let safe_code = code.chars().filter(|character| character.is_ascii_alphanumeric() || *character == '_').take(80).collect::<String>();
@@ -1056,6 +1092,7 @@ fn initialize_state(app_data_dir: PathBuf, addon_path: PathBuf) -> Result<AppSta
         connection_operation: Mutex::new(()),
         rollback_path: app_data_dir.join("connection-rollback.json"),
         proxy_rule_diagnostics: Arc::new(StdMutex::new(VecDeque::new())),
+        tls_diagnostics: Arc::new(StdMutex::new(RecentTlsDiagnostics::default())),
         #[cfg(unix)]
         rule_socket_path,
         #[cfg(windows)]
@@ -1135,6 +1172,7 @@ impl CoreService {
             state.body_store.clone(),
             state.capture_engine.clone(),
             state.proxy_rule_diagnostics.clone(),
+            state.tls_diagnostics.clone(),
         );
         let sdk_server = Arc::new(SdkIngestionServer::localhost(SDK_INGESTION_PORT));
         sdk_commands::spawn_sdk_ingestion(state.sdk_database.clone(), sdk_server, None);

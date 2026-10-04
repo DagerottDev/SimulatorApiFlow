@@ -17,5 +17,5 @@ Interchange supports: cURL, HAR 1.2, explicit Postman v2.1 JSON and CSV. Imports
 - Selected HAR/CSV binary roundtrips, export header redaction, SDK metadata omission, read-only malformed previews, cURL shell/file rejection and nested Postman parsing passed.
 - Existing replay redirect checks passed (2).
 - Workspace compilation passed; existing unused-code warnings remain.
-- Browser interaction remains unverified: the built-in browser security policy blocked the localhost preview during milestone 4. Do not work around that policy.
+- Browser interaction was unverified at this source-check checkpoint because security policy blocked the localhost preview. Later owner-authorized checks passed bounded Compose/send/repeat/cURL-preview and captured/saved/imported Replay loading workflows; see [PLATFORM_ACCEPTANCE.md](PLATFORM_ACCEPTANCE.md). This does not establish every interchange format or UI control. Current browser permission blocks must still be respected.
 - Native, physical-device and release acceptance remain owner-led.

@@ -29,6 +29,7 @@ MAX_RULE_REQUEST_BYTES = 8 * 1024
 _RULES_MTIME_NS: int | None = None
 _RULES_DOCUMENT: dict = {"enabled": True, "rules": []}
 _TLS_POLICIES = weakref.WeakKeyDictionary()
+_TLS_DIAGNOSTICS_EMITTED: set[str] = set()
 
 
 def _emit(payload: dict) -> None:
@@ -161,6 +162,28 @@ async def tls_clienthello(data: tls.ClientHelloData) -> None:
         _emit({"type": "proxy_rules_failed", "code": "proxy_rule_tls_failed", "message": str(exc)})
         # Stop later TLS addons from changing this failed policy decision.
         raise exceptions.AddonHalt()
+
+
+def _tls_handshake_diagnostic(data: tls.TlsData, code: str) -> None:
+    # Report each side once per capture process; never forward raw TLS error/certificate data.
+    message = {
+        "tls_client_handshake_failed": "A client TLS handshake failed; the exact cause is unproven.",
+        "tls_server_handshake_failed": "An upstream TLS handshake failed; the exact cause is unproven.",
+    }.get(code)
+    if message is None:
+        return
+    if _TLS_POLICIES.get(data.context.client, {}).get("failed") or code in _TLS_DIAGNOSTICS_EMITTED:
+        return
+    _TLS_DIAGNOSTICS_EMITTED.add(code)
+    _emit({"type": "transport_diagnostic", "code": code, "message": message})
+
+
+def tls_failed_client(data: tls.TlsData) -> None:
+    _tls_handshake_diagnostic(data, "tls_client_handshake_failed")
+
+
+def tls_failed_server(data: tls.TlsData) -> None:
+    _tls_handshake_diagnostic(data, "tls_server_handshake_failed")
 
 
 def tls_start_client(data: tls.TlsData) -> None:

@@ -39,4 +39,4 @@ Exports redact known secret header/trailer values and omit correlation secrets, 
 4. Check HTTP/3 in Mac local mode and additional clients; the completed live check covers reverse mode only.
 5. Complete milestone 2 reverse/upstream/SOCKS/DNS client acceptance and release/platform compatibility checks.
 
-Milestones 4–8 remain in the full roadmap. This draft does not certify physical devices or a public release.
+At the milestone-3 checkpoint, milestones 4–8 were still pending. Their source implementation is now integrated in the stacked drafts; see [ROADMAP_CHECKPOINT.md](ROADMAP_CHECKPOINT.md) and [PLATFORM_ACCEPTANCE.md](PLATFORM_ACCEPTANCE.md) for current validation evidence and limits. Physical-device and public-release acceptance remain separate.
