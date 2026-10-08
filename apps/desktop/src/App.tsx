@@ -99,9 +99,9 @@ function App() {
     <div className="app-shell">
       <aside className="sidebar">
         <div className="brand">
-          <span className="brand-mark" aria-hidden="true">M</span>
+          <span className="brand-mark" aria-hidden="true">S</span>
           <div>
-            <strong>Mobile API Studio</strong>
+            <strong>SimulatorApiFlow</strong>
             <small>LOCAL WORKSPACE</small>
           </div>
         </div>
@@ -144,7 +144,7 @@ function App() {
         </div> : null}
         <header className="toolbar">
           <div>
-            <span className="eyebrow">MOBILE API STUDIO / {route.toUpperCase()}</span>
+            <span className="eyebrow">SIMULATORAPIFLOW / {route.toUpperCase()}</span>
             <h1>{route === "Connect" ? "Get ready to capture" : route}</h1>
             <p>
               {route === "Connect"

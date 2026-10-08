@@ -8,15 +8,15 @@
 
 /* Begin PBXBuildFile section */
 		2897F6ECADBE0A05CFB467E0 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4102A18DAA0F5B46A421413C /* ContentView.swift */; };
-		496782611C37DEF6F97A397F /* MobileAPIStudioSampleApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 21015D80E003EB8E020EFA63 /* MobileAPIStudioSampleApp.swift */; };
-		AAB2DD54D13B9AFE6AA1249A /* MobileAPIStudio in Frameworks */ = {isa = PBXBuildFile; productRef = BA2F5B43968F1DDB42F37CDA /* MobileAPIStudio */; };
+		496782611C37DEF6F97A397F /* SimulatorApiFlowSampleApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 21015D80E003EB8E020EFA63 /* SimulatorApiFlowSampleApp.swift */; };
+		AAB2DD54D13B9AFE6AA1249A /* SimulatorApiFlow in Frameworks */ = {isa = PBXBuildFile; productRef = BA2F5B43968F1DDB42F37CDA /* SimulatorApiFlow */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
-		21015D80E003EB8E020EFA63 /* MobileAPIStudioSampleApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MobileAPIStudioSampleApp.swift; sourceTree = "<group>"; };
+		21015D80E003EB8E020EFA63 /* SimulatorApiFlowSampleApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SimulatorApiFlowSampleApp.swift; sourceTree = "<group>"; };
 		4102A18DAA0F5B46A421413C /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
-		50686B7FA0403A7ED2BC1571 /* MobileAPIStudio */ = {isa = PBXFileReference; lastKnownFileType = folder; name = MobileAPIStudio; path = ../../sdks/ios/MobileAPIStudio; sourceTree = SOURCE_ROOT; };
-		808DDD680BCE6ADF686954B8 /* MobileAPIStudioSample.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = MobileAPIStudioSample.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		50686B7FA0403A7ED2BC1571 /* SimulatorApiFlow */ = {isa = PBXFileReference; lastKnownFileType = folder; name = SimulatorApiFlow; path = ../../sdks/ios/SimulatorApiFlow; sourceTree = SOURCE_ROOT; };
+		808DDD680BCE6ADF686954B8 /* SimulatorApiFlowSample.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = SimulatorApiFlowSample.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -24,7 +24,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				AAB2DD54D13B9AFE6AA1249A /* MobileAPIStudio in Frameworks */,
+				AAB2DD54D13B9AFE6AA1249A /* SimulatorApiFlow in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -34,7 +34,7 @@
 		1E2C48BF5FF8D5F07F973688 /* Packages */ = {
 			isa = PBXGroup;
 			children = (
-				50686B7FA0403A7ED2BC1571 /* MobileAPIStudio */,
+				50686B7FA0403A7ED2BC1571 /* SimulatorApiFlow */,
 			);
 			name = Packages;
 			sourceTree = "<group>";
@@ -51,7 +51,7 @@
 		D0DD2DDD10C08B060EBA7F30 /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				808DDD680BCE6ADF686954B8 /* MobileAPIStudioSample.app */,
+				808DDD680BCE6ADF686954B8 /* SimulatorApiFlowSample.app */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -60,7 +60,7 @@
 			isa = PBXGroup;
 			children = (
 				4102A18DAA0F5B46A421413C /* ContentView.swift */,
-				21015D80E003EB8E020EFA63 /* MobileAPIStudioSampleApp.swift */,
+				21015D80E003EB8E020EFA63 /* SimulatorApiFlowSampleApp.swift */,
 			);
 			path = Sources;
 			sourceTree = "<group>";
@@ -68,9 +68,9 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
-		5F928110789985F9EB3A6FB8 /* MobileAPIStudioSample */ = {
+		5F928110789985F9EB3A6FB8 /* SimulatorApiFlowSample */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = 42A7A0C4DBADBA569873D95B /* Build configuration list for PBXNativeTarget "MobileAPIStudioSample" */;
+			buildConfigurationList = 42A7A0C4DBADBA569873D95B /* Build configuration list for PBXNativeTarget "SimulatorApiFlowSample" */;
 			buildPhases = (
 				7542C7F0ECF498D9CFCA466D /* Sources */,
 				9E6056AF5262185B4F385748 /* Frameworks */,
@@ -79,12 +79,12 @@
 			);
 			dependencies = (
 			);
-			name = MobileAPIStudioSample;
+			name = SimulatorApiFlowSample;
 			packageProductDependencies = (
-				BA2F5B43968F1DDB42F37CDA /* MobileAPIStudio */,
+				BA2F5B43968F1DDB42F37CDA /* SimulatorApiFlow */,
 			);
-			productName = MobileAPIStudioSample;
-			productReference = 808DDD680BCE6ADF686954B8 /* MobileAPIStudioSample.app */;
+			productName = SimulatorApiFlowSample;
+			productReference = 808DDD680BCE6ADF686954B8 /* SimulatorApiFlowSample.app */;
 			productType = "com.apple.product-type.application";
 		};
 /* End PBXNativeTarget section */
@@ -98,7 +98,7 @@
 				TargetAttributes = {
 				};
 			};
-			buildConfigurationList = 46C54EF5D653744C80469155 /* Build configuration list for PBXProject "MobileAPIStudioSample" */;
+			buildConfigurationList = 46C54EF5D653744C80469155 /* Build configuration list for PBXProject "SimulatorApiFlowSample" */;
 			developmentRegion = en;
 			hasScannedForEncodings = 0;
 			knownRegions = (
@@ -108,14 +108,14 @@
 			mainGroup = 3642619840E0C9BAB227FA45;
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
-				55301912E7C6CBB224A4C44D /* XCLocalSwiftPackageReference "../../sdks/ios/MobileAPIStudio" */,
+				55301912E7C6CBB224A4C44D /* XCLocalSwiftPackageReference "../../sdks/ios/SimulatorApiFlow" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = D0DD2DDD10C08B060EBA7F30 /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
-				5F928110789985F9EB3A6FB8 /* MobileAPIStudioSample */,
+				5F928110789985F9EB3A6FB8 /* SimulatorApiFlowSample */,
 			);
 		};
 /* End PBXProject section */
@@ -126,7 +126,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				2897F6ECADBE0A05CFB467E0 /* ContentView.swift in Sources */,
-				496782611C37DEF6F97A397F /* MobileAPIStudioSampleApp.swift in Sources */,
+				496782611C37DEF6F97A397F /* SimulatorApiFlowSampleApp.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -146,8 +146,8 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = dev.mobileapistudio.sample.ios;
-				PRODUCT_NAME = "Mobile API Studio Sample";
+				PRODUCT_BUNDLE_IDENTIFIER = dev.simulatorapiflow.sample.ios;
+				PRODUCT_NAME = "SimulatorApiFlow Sample";
 				SDKROOT = iphoneos;
 				SWIFT_VERSION = 6.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
@@ -167,8 +167,8 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = dev.mobileapistudio.sample.ios;
-				PRODUCT_NAME = "Mobile API Studio Sample";
+				PRODUCT_BUNDLE_IDENTIFIER = dev.simulatorapiflow.sample.ios;
+				PRODUCT_NAME = "SimulatorApiFlow Sample";
 				SDKROOT = iphoneos;
 				SWIFT_VERSION = 6.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
@@ -295,7 +295,7 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		42A7A0C4DBADBA569873D95B /* Build configuration list for PBXNativeTarget "MobileAPIStudioSample" */ = {
+		42A7A0C4DBADBA569873D95B /* Build configuration list for PBXNativeTarget "SimulatorApiFlowSample" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				3BF590E3EC7C4C0480C2C76B /* Debug */,
@@ -304,7 +304,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Debug;
 		};
-		46C54EF5D653744C80469155 /* Build configuration list for PBXProject "MobileAPIStudioSample" */ = {
+		46C54EF5D653744C80469155 /* Build configuration list for PBXProject "SimulatorApiFlowSample" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				C0FE42FBD082F8F0F8D3E23A /* Debug */,
@@ -316,16 +316,16 @@
 /* End XCConfigurationList section */
 
 /* Begin XCLocalSwiftPackageReference section */
-		55301912E7C6CBB224A4C44D /* XCLocalSwiftPackageReference "../../sdks/ios/MobileAPIStudio" */ = {
+		55301912E7C6CBB224A4C44D /* XCLocalSwiftPackageReference "../../sdks/ios/SimulatorApiFlow" */ = {
 			isa = XCLocalSwiftPackageReference;
-			relativePath = ../../sdks/ios/MobileAPIStudio;
+			relativePath = ../../sdks/ios/SimulatorApiFlow;
 		};
 /* End XCLocalSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
-		BA2F5B43968F1DDB42F37CDA /* MobileAPIStudio */ = {
+		BA2F5B43968F1DDB42F37CDA /* SimulatorApiFlow */ = {
 			isa = XCSwiftPackageProductDependency;
-			productName = MobileAPIStudio;
+			productName = SimulatorApiFlow;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

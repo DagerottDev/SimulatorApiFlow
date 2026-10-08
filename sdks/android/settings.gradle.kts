@@ -14,6 +14,6 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "mobile-api-studio-android"
-include(":mobile-api-studio")
+rootProject.name = "simulator-api-flow-android"
+include(":simulator-api-flow")
 include(":sample")

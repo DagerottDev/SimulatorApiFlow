@@ -121,8 +121,8 @@ with tempfile.TemporaryDirectory(prefix="mas-script-hooks-") as temporary:
     service_port, capture_port = free_port(), free_port()
     while capture_port == service_port:
         capture_port = free_port()
-    binary = os.environ.get("MAS_SERVER_BINARY", str(root / "target/debug/mobile-api-studio-server"))
-    worker = Path(binary).with_name("mobile-api-studio-script-worker")
+    binary = os.environ.get("MAS_SERVER_BINARY", str(root / "target/debug/simulator-api-flow-server"))
+    worker = Path(binary).with_name("simulator-api-flow-script-worker")
     assert Path(binary).is_file(), f"Build the service first: {binary}"
     assert worker.is_file(), f"Build the script worker first: {worker}"
 

@@ -1,6 +1,6 @@
 # AI Privacy and Provider Architecture
 
-Phase 5 adds optional AI explanations on top of deterministic Mobile API Studio evidence. AI is never required for capture, replay, mocking, SDK correlation, or session comparison.
+Phase 5 adds optional AI explanations on top of deterministic SimulatorApiFlow evidence. AI is never required for capture, replay, mocking, SDK correlation, or session comparison.
 
 ## Design rules
 
@@ -19,7 +19,7 @@ Phase 5 adds optional AI explanations on top of deterministic Mobile API Studio 
 - authentication: Bearer API key from the OS credential store
 - `store: false`
 - model is user-configurable; the initial default is `gpt-5.6-luna`
-- no web search, file search, tools, background mode, or remote state is enabled by Mobile API Studio
+- no web search, file search, tools, background mode, or remote state is enabled by SimulatorApiFlow
 
 Adding another provider should implement the same interface and must preserve the local preview/redaction/fingerprint gate.
 
@@ -66,11 +66,11 @@ The initial policy caps:
 - each string at 12,000 characters;
 - complete sanitized context at 120,000 bytes.
 
-If the overall context exceeds the cap, Mobile API Studio sends a JSON wrapper containing a sanitized bounded preview and marks the context as truncated. The exact truncated payload is still shown before send.
+If the overall context exceeds the cap, SimulatorApiFlow sends a JSON wrapper containing a sanitized bounded preview and marks the context as truncated. The exact truncated payload is still shown before send.
 
 ## OpenAI data handling choice
 
-Mobile API Studio sets `store: false` for its OpenAI Responses API calls. The app does not use background mode or provider-side conversation state. Users should still apply their organization's own OpenAI API data-retention and compliance requirements.
+SimulatorApiFlow sets `store: false` for its OpenAI Responses API calls. The app does not use background mode or provider-side conversation state. Users should still apply their organization's own OpenAI API data-retention and compliance requirements.
 
 ## BYOK settings
 

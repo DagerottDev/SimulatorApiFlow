@@ -1,12 +1,12 @@
 {
-  "name": "mobile-api-studio",
+  "name": "simulator-api-flow",
   "private": true,
   "license": "Apache-2.0",
   "packageManager": "pnpm@10.15.0",
   "scripts": {
     "dev": "./scripts/run-local.sh",
-    "build": "pnpm --filter @mobile-api-studio/desktop build",
-    "typecheck": "pnpm --filter @mobile-api-studio/desktop typecheck",
+    "build": "pnpm --filter @simulator-api-flow/desktop build",
+    "typecheck": "pnpm --filter @simulator-api-flow/desktop typecheck",
     "local": "./scripts/run-local.sh"
   }
 }

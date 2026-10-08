@@ -1,4 +1,4 @@
-package dev.mobileapistudio.sdk
+package dev.simulatorapiflow.sdk
 
 import android.content.Context
 import okhttp3.Request
@@ -6,7 +6,7 @@ import okhttp3.Response
 import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
 
-public object MobileAPIStudio {
+public object SimulatorApiFlow {
     public const val sdkVersion: String = "0.1.0"
     public const val correlationHeader: String = "X-Mobile-API-Studio-Request-Id"
 
@@ -14,14 +14,14 @@ public object MobileAPIStudio {
         val startedAtMillis: Long,
         val method: String,
         val url: String,
-        val context: MobileAPIStudioContext,
+        val context: SimulatorApiFlowContext,
     )
 
     private val lock = Any()
     private var configuration: ResolvedConfiguration? = null
-    private var transport: MobileAPIStudioTransport? = null
+    private var transport: SimulatorApiFlowTransport? = null
     private var clientId: String? = null
-    private var currentContext = MobileAPIStudioContext()
+    private var currentContext = SimulatorApiFlowContext()
     private val inFlight = ConcurrentHashMap<String, InFlight>()
 
     public val isEnabled: Boolean
@@ -29,7 +29,7 @@ public object MobileAPIStudio {
 
     public fun configure(
         context: Context,
-        configuration: MobileAPIStudioConfiguration = MobileAPIStudioConfiguration(),
+        configuration: SimulatorApiFlowConfiguration = SimulatorApiFlowConfiguration(),
     ) {
         val appContext = context.applicationContext
         val resolved = configuration.resolved(appContext)
@@ -39,12 +39,12 @@ public object MobileAPIStudio {
             if (!resolved.enabled) {
                 transport = null
                 clientId = null
-                currentContext = MobileAPIStudioContext()
+                currentContext = SimulatorApiFlowContext()
                 inFlight.clear()
                 previous
             } else {
                 val nextClientId = loadClientId(appContext, resolved.appId)
-                transport = MobileAPIStudioTransport(resolved.desktopHost, resolved.desktopPort, resolved.pairingToken)
+                transport = SimulatorApiFlowTransport(resolved.desktopHost, resolved.desktopPort, resolved.pairingToken)
                 clientId = nextClientId
                 previous
             }
@@ -59,7 +59,7 @@ public object MobileAPIStudio {
             val value = transport
             transport = null
             clientId = null
-            currentContext = MobileAPIStudioContext()
+            currentContext = SimulatorApiFlowContext()
             inFlight.clear()
             value
         }
@@ -70,9 +70,9 @@ public object MobileAPIStudio {
         screen: String? = null,
         feature: String? = null,
         attributes: Map<String, String> = emptyMap(),
-        source: MobileAPIStudioSource? = callerSource(),
+        source: SimulatorApiFlowSource? = callerSource(),
     ) {
-        val value = MobileAPIStudioContext(screen, feature, attributes, source)
+        val value = SimulatorApiFlowContext(screen, feature, attributes, source)
         val payload = synchronized(lock) {
             currentContext = value
             val id = clientId ?: return@synchronized null
@@ -84,9 +84,9 @@ public object MobileAPIStudio {
 
     public fun log(
         message: String,
-        level: MobileAPIStudioLogLevel = MobileAPIStudioLogLevel.INFO,
+        level: SimulatorApiFlowLogLevel = SimulatorApiFlowLogLevel.INFO,
         attributes: Map<String, String> = emptyMap(),
-        source: MobileAPIStudioSource? = callerSource(),
+        source: SimulatorApiFlowSource? = callerSource(),
     ) {
         val payload = synchronized(lock) {
             val id = clientId ?: return@synchronized null
@@ -106,8 +106,8 @@ public object MobileAPIStudio {
         request: Request,
         feature: String? = null,
         attributes: Map<String, String> = emptyMap(),
-        source: MobileAPIStudioSource? = callerSource(),
-    ): MobileAPIStudioInstrumentedRequest? {
+        source: SimulatorApiFlowSource? = callerSource(),
+    ): SimulatorApiFlowInstrumentedRequest? {
         val requestId = beginRequest(
             method = request.method,
             url = request.url.toString(),
@@ -118,7 +118,7 @@ public object MobileAPIStudio {
         val instrumented = request.newBuilder()
             .header(correlationHeader, requestId)
             .build()
-        return MobileAPIStudioInstrumentedRequest(requestId, instrumented)
+        return SimulatorApiFlowInstrumentedRequest(requestId, instrumented)
     }
 
     /**
@@ -130,7 +130,7 @@ public object MobileAPIStudio {
         url: String,
         feature: String? = null,
         attributes: Map<String, String> = emptyMap(),
-        source: MobileAPIStudioSource? = callerSource(),
+        source: SimulatorApiFlowSource? = callerSource(),
     ): String? {
         val result = synchronized(lock) {
             val id = clientId ?: return@synchronized null
@@ -193,7 +193,7 @@ public object MobileAPIStudio {
         payload?.let { send("network", it) }
     }
 
-    public fun sourceFromStack(): MobileAPIStudioSource? = callerSource()
+    public fun sourceFromStack(): SimulatorApiFlowSource? = callerSource()
 
     private fun sendHandshake() {
         val payload = synchronized(lock) {
@@ -222,8 +222,8 @@ public object MobileAPIStudio {
     private fun mergedContext(
         feature: String?,
         attributes: Map<String, String>,
-        source: MobileAPIStudioSource?,
-    ): MobileAPIStudioContext {
+        source: SimulatorApiFlowSource?,
+    ): SimulatorApiFlowContext {
         return currentContext.copy(
             feature = feature ?: currentContext.feature,
             attributes = currentContext.attributes + attributes,
@@ -232,7 +232,7 @@ public object MobileAPIStudio {
     }
 
     private fun loadClientId(context: Context, appId: String): String {
-        val preferences = context.getSharedPreferences("mobile-api-studio", Context.MODE_PRIVATE)
+        val preferences = context.getSharedPreferences("simulator-api-flow", Context.MODE_PRIVATE)
         val key = "client-id.$appId"
         val existing = preferences.getString(key, null)
         if (!existing.isNullOrBlank()) return existing
@@ -241,13 +241,13 @@ public object MobileAPIStudio {
         return generated
     }
 
-    private fun callerSource(): MobileAPIStudioSource? {
+    private fun callerSource(): SimulatorApiFlowSource? {
         val frame = Throwable().stackTrace.firstOrNull { element ->
-            !element.className.startsWith("dev.mobileapistudio.sdk.") &&
+            !element.className.startsWith("dev.simulatorapiflow.sdk.") &&
                 !element.className.startsWith("java.") &&
                 !element.className.startsWith("kotlin.")
         } ?: return null
-        return MobileAPIStudioSource(
+        return SimulatorApiFlowSource(
             file = frame.fileName,
             function = frame.methodName,
             line = frame.lineNumber.takeIf { it >= 0 },

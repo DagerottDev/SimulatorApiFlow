@@ -2,10 +2,10 @@
 
 ## Use it
 
-1. Start Mobile API Studio with `./scripts/run-local.sh` and boot a Simulator in Xcode.
+1. Start SimulatorApiFlow with `./scripts/run-local.sh` and boot a Simulator in Xcode.
 2. Open **Connect**, select the Simulator, and leave **Set up Mac network routing automatically** selected.
 3. Keep the current-route Mac network service selected, then click **Set up Simulator & start capture**.
-4. Approve macOS's standard network authorization prompt if required. Enter any administrator credentials directly into macOS; Mobile API Studio does not collect them.
+4. Approve macOS's standard network authorization prompt if required. Enter any administrator credentials directly into macOS; SimulatorApiFlow does not collect them.
 5. Generate requests in your development app and inspect them in **Traffic**.
 
 Setup starts capture, waits for the capture CA, installs it in the selected Simulator with `simctl keychain add-root-cert`, and applies HTTP/HTTPS routing through `127.0.0.1:8181`. Xcode and a usable booted runtime are required.

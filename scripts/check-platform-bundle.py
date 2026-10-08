@@ -26,7 +26,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('bundle', type=Path)
     bundle = parser.parse_args().bundle.resolve()
-    assert (bundle / 'sidecars/mitm-addon/mas_bridge.py').is_file()
+    assert (bundle / 'sidecars/mitm-addon/saf_bridge.py').is_file()
     assert not list(bundle.rglob('*.pyc')), 'Package must not include Python caches'
     with socket.socket() as port_socket:
         port_socket.bind(('127.0.0.1', 0))
@@ -68,7 +68,7 @@ def main():
                     with urllib.request.urlopen(base + asset, timeout=2) as response:
                         assert response.read() == (bundle / 'ui' / asset.lstrip('/')).read_bytes()
 
-                cli = ['python3' if os.name != 'nt' else 'python', str(bundle / 'cli/mas-cli.py')]
+                cli = ['python3' if os.name != 'nt' else 'python', str(bundle / 'cli/saf-cli.py')]
                 if os.name != 'nt':
                     cli += ['--socket', str(data / 'control/socket')]
                 for name in ['health', 'capture_platform_info', 'list_desktop_processes', 'list_lan_interfaces']:

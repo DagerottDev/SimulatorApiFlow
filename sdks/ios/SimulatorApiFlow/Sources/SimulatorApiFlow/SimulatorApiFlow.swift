@@ -3,7 +3,7 @@ import Foundation
 import UIKit
 #endif
 
-public enum MobileAPIStudio {
+public enum SimulatorApiFlow {
     public static let sdkVersion = "0.1.0"
     public static let correlationHeader = "X-Mobile-API-Studio-Request-Id"
 
@@ -15,16 +15,16 @@ public enum MobileAPIStudio {
         #endif
     }
 
-    private static let state = MobileAPIStudioState()
+    private static let state = SimulatorApiFlowState()
 
     internal static var isEnabled: Bool { state.isEnabled }
 
-    public static func configure(_ configuration: MobileAPIStudioConfiguration = .init()) {
+    public static func configure(_ configuration: SimulatorApiFlowConfiguration = .init()) {
         state.configure(configuration)
     }
 
     public static func disable() {
-        var configuration = MobileAPIStudioConfiguration()
+        var configuration = SimulatorApiFlowConfiguration()
         configuration.enabled = false
         state.configure(configuration)
     }
@@ -38,18 +38,18 @@ public enum MobileAPIStudio {
         line: UInt = #line
     ) {
         state.setContext(
-            MobileAPIStudioContext(
+            SimulatorApiFlowContext(
                 screen: screen,
                 feature: feature,
                 attributes: attributes,
-                source: MobileAPIStudioSource(file: file, function: function, line: line)
+                source: SimulatorApiFlowSource(file: file, function: function, line: line)
             )
         )
     }
 
     public static func log(
         _ message: String,
-        level: MobileAPIStudioLogLevel = .info,
+        level: SimulatorApiFlowLogLevel = .info,
         attributes: [String: String] = [:],
         file: String = #fileID,
         function: String = #function,
@@ -59,7 +59,7 @@ public enum MobileAPIStudio {
             message,
             level: level,
             attributes: attributes,
-            source: MobileAPIStudioSource(file: file, function: function, line: line)
+            source: SimulatorApiFlowSource(file: file, function: function, line: line)
         )
     }
 
@@ -76,7 +76,7 @@ public enum MobileAPIStudio {
             &request,
             feature: feature,
             attributes: attributes,
-            source: MobileAPIStudioSource(file: file, function: function, line: line)
+            source: SimulatorApiFlowSource(file: file, function: function, line: line)
         )
     }
 
@@ -87,7 +87,7 @@ public enum MobileAPIStudio {
         file: String = #fileID,
         function: String = #function,
         line: UInt = #line
-    ) -> MobileAPIStudioInstrumentedRequest? {
+    ) -> SimulatorApiFlowInstrumentedRequest? {
         var copy = request
         guard let requestID = instrument(
             &copy,
@@ -99,7 +99,7 @@ public enum MobileAPIStudio {
         ) else {
             return nil
         }
-        return MobileAPIStudioInstrumentedRequest(requestID: requestID, request: copy)
+        return SimulatorApiFlowInstrumentedRequest(requestID: requestID, request: copy)
     }
 
     public static func complete(
@@ -113,14 +113,14 @@ public enum MobileAPIStudio {
     public static func instrument(_ configuration: URLSessionConfiguration) -> URLSessionConfiguration {
         guard state.isEnabled else { return configuration }
         var classes = configuration.protocolClasses ?? []
-        if !classes.contains(where: { $0 == MobileAPIStudioURLProtocol.self }) {
-            classes.insert(MobileAPIStudioURLProtocol.self, at: 0)
+        if !classes.contains(where: { $0 == SimulatorApiFlowURLProtocol.self }) {
+            classes.insert(SimulatorApiFlowURLProtocol.self, at: 0)
             configuration.protocolClasses = classes
         }
         return configuration
     }
 
-    internal static func autoInstrument(_ request: URLRequest) -> MobileAPIStudioInstrumentedRequest? {
+    internal static func autoInstrument(_ request: URLRequest) -> SimulatorApiFlowInstrumentedRequest? {
         var copy = request
         guard let requestID = state.instrument(
             &copy,
@@ -128,22 +128,22 @@ public enum MobileAPIStudio {
             attributes: [:],
             source: nil
         ) else { return nil }
-        return MobileAPIStudioInstrumentedRequest(requestID: requestID, request: copy)
+        return SimulatorApiFlowInstrumentedRequest(requestID: requestID, request: copy)
     }
 }
 
-private final class MobileAPIStudioState: @unchecked Sendable {
+private final class SimulatorApiFlowState: @unchecked Sendable {
     private struct InFlight {
         var startedAt: Date
         var method: String
         var url: String
-        var context: MobileAPIStudioContext
+        var context: SimulatorApiFlowContext
     }
 
     private let lock = NSLock()
-    private var configuration: MobileAPIStudioConfiguration?
-    private var transport: MobileAPIStudioTransport?
-    private var currentContext = MobileAPIStudioContext()
+    private var configuration: SimulatorApiFlowConfiguration?
+    private var transport: SimulatorApiFlowTransport?
+    private var currentContext = SimulatorApiFlowContext()
     private var inFlight: [String: InFlight] = [:]
     private var clientID: String?
 
@@ -151,7 +151,7 @@ private final class MobileAPIStudioState: @unchecked Sendable {
         lock.withLock { configuration?.enabled == true }
     }
 
-    func configure(_ configuration: MobileAPIStudioConfiguration) {
+    func configure(_ configuration: SimulatorApiFlowConfiguration) {
         lock.withLock {
             self.configuration = configuration
             guard configuration.enabled else {
@@ -160,13 +160,13 @@ private final class MobileAPIStudioState: @unchecked Sendable {
                 inFlight.removeAll()
                 return
             }
-            transport = MobileAPIStudioTransport(baseURL: configuration.desktopBaseURL, pairingToken: configuration.pairingToken)
+            transport = SimulatorApiFlowTransport(baseURL: configuration.desktopBaseURL, pairingToken: configuration.pairingToken)
             clientID = loadClientID(appID: configuration.appID)
         }
         sendHandshake()
     }
 
-    func setContext(_ context: MobileAPIStudioContext) {
+    func setContext(_ context: SimulatorApiFlowContext) {
         let payload: [String: Any]? = lock.withLock {
             currentContext = context
             guard let clientID, configuration?.enabled == true else { return nil }
@@ -177,9 +177,9 @@ private final class MobileAPIStudioState: @unchecked Sendable {
 
     func log(
         _ message: String,
-        level: MobileAPIStudioLogLevel,
+        level: SimulatorApiFlowLogLevel,
         attributes: [String: String],
-        source: MobileAPIStudioSource
+        source: SimulatorApiFlowSource
     ) {
         let payload: [String: Any]? = lock.withLock {
             guard let clientID, configuration?.enabled == true else { return nil }
@@ -200,13 +200,13 @@ private final class MobileAPIStudioState: @unchecked Sendable {
         _ request: inout URLRequest,
         feature: String?,
         attributes: [String: String],
-        source: MobileAPIStudioSource?
+        source: SimulatorApiFlowSource?
     ) -> String? {
         let result: (String, [String: Any])? = lock.withLock {
             guard let clientID, configuration?.enabled == true,
                   let url = request.url else { return nil }
             let requestID = UUID().uuidString.lowercased()
-            request.setValue(requestID, forHTTPHeaderField: MobileAPIStudio.correlationHeader)
+            request.setValue(requestID, forHTTPHeaderField: SimulatorApiFlow.correlationHeader)
             var context = currentContext
             if let feature { context.feature = feature }
             context.attributes.merge(attributes) { _, new in new }
@@ -268,7 +268,7 @@ private final class MobileAPIStudioState: @unchecked Sendable {
                 "appId": configuration.appID,
                 "appName": configuration.appName,
                 "platform": "ios",
-                "sdkVersion": MobileAPIStudio.sdkVersion
+                "sdkVersion": SimulatorApiFlow.sdkVersion
             ]
             if let appVersion = configuration.appVersion { value["appVersion"] = appVersion }
             if let appBuild = configuration.appBuild { value["appBuild"] = appBuild }
@@ -290,7 +290,7 @@ private final class MobileAPIStudioState: @unchecked Sendable {
     }
 
     private func loadClientID(appID: String) -> String {
-        let key = "dev.mobileapistudio.client-id.\(appID)"
+        let key = "dev.simulatorapiflow.client-id.\(appID)"
         if let existing = UserDefaults.standard.string(forKey: key), !existing.isEmpty {
             return existing
         }

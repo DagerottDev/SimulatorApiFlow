@@ -1,4 +1,4 @@
-# Mobile API Studio — Project Working Rules
+# SimulatorApiFlow — Project Working Rules
 
 These rules apply unless the repository owner explicitly changes them.
 

@@ -1,3 +1,4 @@
+// Keep the original service so the rename does not orphan saved secrets.
 const SERVICE_NAME: &str = "dev.mobileapistudio.environment";
 const PROBE_REFERENCE: &str = "__availability_probe__";
 

@@ -114,7 +114,7 @@ export function CompareView() {
         <div className="panel-heading"><div><strong>Deterministic diagnostics</strong><span>Retries, slow calls, errors, and waterfall evidence</span></div><div className="compare-side-toggle"><button className={diagnosticSide === "baseline" ? "workspace-tab active" : "workspace-tab"} onClick={() => setDiagnosticSide("baseline")}>Baseline</button><button className={diagnosticSide === "candidate" ? "workspace-tab active" : "workspace-tab"} onClick={() => setDiagnosticSide("candidate")}>Candidate</button></div></div>
         {diagnostics ? <DiagnosticsPanel diagnostics={diagnostics} /> : null}
       </section>
-    </> : <section className="panel compare-empty"><h2>Compare two completed capture sessions</h2><p>Mobile API Studio will align normalized endpoints and show missing calls, payload/status changes, JSON schema drift, timing regressions, retries, and SDK context differences.</p></section>}
+    </> : <section className="panel compare-empty"><h2>Compare two completed capture sessions</h2><p>SimulatorApiFlow will align normalized endpoints and show missing calls, payload/status changes, JSON schema drift, timing regressions, retries, and SDK context differences.</p></section>}
   </div>;
 }
 

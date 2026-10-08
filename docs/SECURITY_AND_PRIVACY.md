@@ -2,7 +2,7 @@
 
 > **Status:** this document reflects security/privacy boundaries implemented through v0.5 and the eight expansion milestones. Formal security testing and release review are still part of the deferred owner-led validation/release stage.
 
-Mobile API Studio can handle authentication headers, cookies, test/customer payloads, local proxy configuration, a development CA, SDK metadata, and optional external AI requests. These boundaries are therefore part of product architecture, not optional cleanup.
+SimulatorApiFlow can handle authentication headers, cookies, test/customer payloads, local proxy configuration, a development CA, SDK metadata, and optional external AI requests. These boundaries are therefore part of product architecture, not optional cleanup.
 
 ## 1. Local-first default
 
@@ -21,7 +21,7 @@ Data leaves the machine only through an explicit user action such as normal requ
 
 ## 2. Capture CA policy
 
-The current capture path uses mitmproxy CA material inside Mobile API Studio's local capture data directory.
+The current capture path uses mitmproxy CA material inside SimulatorApiFlow's local capture data directory.
 
 Required policy:
 
@@ -35,7 +35,7 @@ One-click iOS Simulator setup installs the development root certificate using `s
 
 ## 3. Proxy/device mutation and rollback
 
-Before changing a supported mutable proxy setting, Mobile API Studio records enough prior state to restore it.
+Before changing a supported mutable proxy setting, SimulatorApiFlow records enough prior state to restore it.
 
 Current behavior:
 
@@ -163,7 +163,7 @@ This prevents a stale preview from authorizing materially different context.
 
 ## 11. Certificate pinning policy
 
-Mobile API Studio does **not** implement pinning bypass as a product feature.
+SimulatorApiFlow does **not** implement pinning bypass as a product feature.
 
 When a client rejects the interception CA:
 

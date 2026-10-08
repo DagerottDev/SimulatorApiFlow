@@ -16,7 +16,7 @@ labels: bug
 
 ## Platform
 
-- Mobile API Studio version/commit:
+- SimulatorApiFlow version/commit:
 - macOS/Windows/Linux:
 - Xcode / iOS Simulator (if relevant):
 - Android Emulator / API level (if relevant):

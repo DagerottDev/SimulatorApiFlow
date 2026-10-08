@@ -107,7 +107,7 @@ export function SettingsView() {
       const url = URL.createObjectURL(new Blob([bundleText], { type: "application/json" }));
       const link = document.createElement("a");
       link.href = url;
-      link.download = `mobile-api-studio-workspace-${new Date().toISOString().slice(0, 10)}.mas.json`;
+      link.download = `simulator-api-flow-workspace-${new Date().toISOString().slice(0, 10)}.mas.json`;
       link.click();
       window.setTimeout(() => URL.revokeObjectURL(url), 1000);
       await invoke<OnboardingStep>("set_onboarding_step", {

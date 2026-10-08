@@ -20,6 +20,7 @@ use std::{
 };
 
 pub fn default_data_dir() -> Result<PathBuf, String> {
+    // Keep the original identity so existing workspaces and rollback journals remain discoverable.
     #[cfg(target_os = "macos")]
     let path = home_dir()?.join("Library/Application Support/dev.mobileapistudio.desktop");
     #[cfg(target_os = "windows")]
@@ -286,11 +287,16 @@ fn lock_file(file: &File, data_dir: &Path) -> Result<Overlapped, String> {
 
 #[cfg(target_os = "macos")]
 fn check_legacy_macos_process(data_dir: &Path) -> Result<(), String> {
-    for process_name in ["mobile-api-studio", "Mobile API Studio"] {
+    for process_name in [
+        "mobile-api-studio",
+        "Mobile API Studio",
+        "simulator-api-flow",
+        "SimulatorApiFlow",
+    ] {
         match Command::new("pgrep").arg("-x").arg(process_name).output() {
             Ok(result) if result.status.success() => {
                 return Err(
-                    "Close the historical Mobile API Studio app before starting the local service."
+                    "Close the historical SimulatorApiFlow app before starting the local service."
                         .into(),
                 );
             }

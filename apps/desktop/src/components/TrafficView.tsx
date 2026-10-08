@@ -383,7 +383,7 @@ export function TrafficView({ onOpenConnect }: { onOpenConnect: () => void }) {
 
 function SdkEnrichmentSection({ enrichment }: { enrichment: FlowSdkEnrichment | null }) {
   if (!enrichment?.requestId) {
-    return <section className="inspector-section"><h3>App context</h3><p className="muted-copy">No Mobile API Studio SDK correlation metadata was attached to this request.</p></section>;
+    return <section className="inspector-section"><h3>App context</h3><p className="muted-copy">No SimulatorApiFlow SDK correlation metadata was attached to this request.</p></section>;
   }
 
   const networkEvents = enrichment.requestEvents.filter((event) => event.event.type === "network");

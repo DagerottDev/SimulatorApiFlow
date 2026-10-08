@@ -1,22 +1,22 @@
-name: MobileAPIStudioSample
+name: SimulatorApiFlowSample
 options:
-  bundleIdPrefix: dev.mobileapistudio
+  bundleIdPrefix: dev.simulatorapiflow
 packages:
-  MobileAPIStudio:
-    path: ../../sdks/ios/MobileAPIStudio
+  SimulatorApiFlow:
+    path: ../../sdks/ios/SimulatorApiFlow
 targets:
-  MobileAPIStudioSample:
+  SimulatorApiFlowSample:
     type: application
     platform: iOS
     deploymentTarget: "15.0"
     sources:
       - Sources
     dependencies:
-      - package: MobileAPIStudio
+      - package: SimulatorApiFlow
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: dev.mobileapistudio.sample.ios
-        PRODUCT_NAME: Mobile API Studio Sample
+        PRODUCT_BUNDLE_IDENTIFIER: dev.simulatorapiflow.sample.ios
+        PRODUCT_NAME: SimulatorApiFlow Sample
         SWIFT_VERSION: 6.0
         GENERATE_INFOPLIST_FILE: YES
         INFOPLIST_KEY_UIApplicationSceneManifest_Generation: YES

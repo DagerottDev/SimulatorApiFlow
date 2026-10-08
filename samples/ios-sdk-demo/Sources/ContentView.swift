@@ -1,5 +1,5 @@
 import Foundation
-import MobileAPIStudio
+import SimulatorApiFlow
 import SwiftUI
 
 struct ContentView: View {
@@ -8,7 +8,7 @@ struct ContentView: View {
 
     var body: some View {
         VStack(spacing: 18) {
-            Text("Mobile API Studio")
+            Text("SimulatorApiFlow")
                 .font(.title2.bold())
             Text(status)
                 .font(.body)
@@ -27,7 +27,7 @@ struct ContentView: View {
         sending = true
         defer { sending = false }
 
-        MobileAPIStudio.setContext(
+        SimulatorApiFlow.setContext(
             screen: "Sample Home",
             feature: "Load Demo API",
             attributes: ["trigger": "button"]
@@ -35,18 +35,18 @@ struct ContentView: View {
         status = "Sending…"
 
         do {
-            let configuration = MobileAPIStudio.instrument(URLSessionConfiguration.default)
+            let configuration = SimulatorApiFlow.instrument(URLSessionConfiguration.default)
             let session = URLSession(configuration: configuration)
-            let url = URL(string: "https://httpbin.org/anything/mobile-api-studio")!
+            let url = URL(string: "https://httpbin.org/anything/simulator-api-flow")!
             let (_, response) = try await session.data(from: url)
             let code = (response as? HTTPURLResponse)?.statusCode ?? 0
-            MobileAPIStudio.log(
+            SimulatorApiFlow.log(
                 "Sample request completed",
                 attributes: ["status": String(code)]
             )
             status = "Completed with HTTP \(code). Open Traffic → App context."
         } catch {
-            MobileAPIStudio.log("Sample request failed: \(error)", level: .error)
+            SimulatorApiFlow.log("Sample request failed: \(error)", level: .error)
             status = "Failed: \(error.localizedDescription)"
         }
     }

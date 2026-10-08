@@ -135,7 +135,7 @@ export function AiView() {
       <div className="ai-fingerprint"><span>SHA-256</span><code>{preview.contextFingerprint}</code></div>
       <pre className="ai-context-preview">{preview.json}</pre>
       <div className="ai-send-row">
-        <p className="muted-copy">Sending is always explicit. Mobile API Studio recomputes the redacted context and aborts if its fingerprint differs from this preview.</p>
+        <p className="muted-copy">Sending is always explicit. SimulatorApiFlow recomputes the redacted context and aborts if its fingerprint differs from this preview.</p>
         <button className="primary" disabled={!canSend} onClick={() => void askAi()}>{busy ? "Asking AI…" : mode === "session" ? "Explain this comparison" : "Diagnose this flow"}</button>
       </div>
     </section> : null}

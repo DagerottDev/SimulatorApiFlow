@@ -1,6 +1,6 @@
 import Foundation
 
-internal final class MobileAPIStudioTransport: @unchecked Sendable {
+internal final class SimulatorApiFlowTransport: @unchecked Sendable {
     private let session: URLSession
     private var endpoint: URL
     private let pairingToken: String?

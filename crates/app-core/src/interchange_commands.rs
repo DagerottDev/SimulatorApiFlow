@@ -970,7 +970,7 @@ pub fn export_interchange(
                 }
                 items.push(json!({"name":format!("{} {}",r.method,r.url),"request":req}));
             }
-            serde_json::to_string_pretty(&json!({"info":{"name":"Mobile API Studio export","schema":POSTMAN_SCHEMA},"item":items})).map_err(|e| invalid(e.to_string()))?
+            serde_json::to_string_pretty(&json!({"info":{"name":"SimulatorApiFlow export","schema":POSTMAN_SCHEMA},"item":items})).map_err(|e| invalid(e.to_string()))?
         }
         "csv" => {
             let mut rows = vec![vec![
@@ -1087,7 +1087,7 @@ fn export_har(
         let number = |n: Option<u64>| n.map(|n| json!(n)).unwrap_or(json!(-1));
         entries.push(json!({"startedDateTime":time(d.as_ref().map(|d|d.summary.started_at.as_str()).unwrap_or("1970-01-01T00:00:00Z"))?,"time":timing.total_ms.unwrap_or(0),"request":req,"response":{"status":response.map(|r|r.status_code).unwrap_or(0),"statusText":response.and_then(|r|r.reason.clone()).unwrap_or_default(),"httpVersion":d.as_ref().and_then(|d|d.protocol.as_ref()).and_then(|p|p.response_http_version.clone()).unwrap_or_else(||"HTTP/1.1".into()),"headers":rh.iter().map(|h|json!({"name":h.name,"value":h.value.as_deref().unwrap_or_default()})).collect::<Vec<_>>(),"cookies":[],"content":content,"redirectURL":"","headersSize":-1,"bodySize":response_body.as_ref().map(body_bytes).transpose()?.map(|b|b.len()).unwrap_or(0)},"cache":{},"timings":{"blocked":-1,"dns":number(timing.dns_ms),"connect":number(timing.connect_ms),"ssl":number(timing.tls_ms),"send":timing.request_ms.unwrap_or(0),"wait":timing.server_ms.unwrap_or(0),"receive":timing.download_ms.unwrap_or(0)}}));
     }
-    serde_json::to_string_pretty(&json!({"log":{"version":"1.2","creator":{"name":"Mobile API Studio","version":"0.5"},"entries":entries}})).map_err(|e|invalid(e.to_string()))
+    serde_json::to_string_pretty(&json!({"log":{"version":"1.2","creator":{"name":"SimulatorApiFlow","version":"0.5"},"entries":entries}})).map_err(|e|invalid(e.to_string()))
 }
 fn har_content(b: &ReplayBodyDraft, response: bool) -> Result<Value, AppError> {
     let bytes = body_bytes(b)?;

@@ -4,7 +4,7 @@ The GitHub repository already exists and the planned implementation through v0.5
 
 ## Repository
 
-- Name: `mobile-api-studio`
+- Name: `SimulatorApiFlow`
 - Visibility: public.
 - Default branch: `main`
 - Description: `Local-first API debugger for iOS Simulators and Android Emulators: capture, replay, mock, compare.`

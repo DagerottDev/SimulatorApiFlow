@@ -14,7 +14,7 @@ For HTTPS, install the development capture CA using `mitm.it` through the proxy.
 
 Physical-device SDK telemetry has a separate listener on the selected LAN interface at port `8184`. It accepts only the paired address and requires the session's `X-MAS-Pairing-Token`; configure the SDK's host/port or base URL and pairing token explicitly. The loopback SDK listener remains on `8182`. The pairing token is shown only at connection time and is not stored in sessions or exports. It remains valid until disconnect. The LAN SDK path currently uses HTTP, so use it only on a trusted development network and keep secrets out of telemetry.
 
-Use the host and token shown in Connect. For an iOS debug build, set `MobileAPIStudioConfiguration(desktopBaseURL: URL(string: "http://<Mac LAN IP>:8184")!, pairingToken: "<token>")`. For Android, set `MobileAPIStudioConfiguration(desktopHost = "<Mac LAN IP>", desktopPort = 8184, pairingToken = "<token>", enabled = true)`. Do not put the token in source control.
+Use the host and token shown in Connect. For an iOS debug build, set `SimulatorApiFlowConfiguration(desktopBaseURL: URL(string: "http://<Mac LAN IP>:8184")!, pairingToken: "<token>")`. For Android, set `SimulatorApiFlowConfiguration(desktopHost = "<Mac LAN IP>", desktopPort = 8184, pairingToken = "<token>", enabled = true)`. Do not put the token in source control.
 
 Disconnect closes the LAN listeners and capture engine. If the app exits unexpectedly, its listeners disappear and it has no Mac or physical-device setting to restore. The existing Android Emulator proxy rollback journal remains independent.
 

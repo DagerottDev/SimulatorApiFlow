@@ -1,3 +1,3 @@
 fn main() {
-    mobile_api_studio_lib::run();
+    simulator_api_flow_lib::run();
 }

@@ -1,4 +1,4 @@
-package dev.mobileapistudio.sdk
+package dev.simulatorapiflow.sdk
 
 import org.json.JSONArray
 import org.json.JSONObject
@@ -9,7 +9,7 @@ import java.nio.charset.StandardCharsets
 import java.util.UUID
 import java.util.concurrent.Executors
 
-internal class MobileAPIStudioTransport(
+internal class SimulatorApiFlowTransport(
     private val host: String,
     private val port: Int,
     private val pairingToken: String?,
@@ -17,11 +17,11 @@ internal class MobileAPIStudioTransport(
     init {
         require(pairingToken == null || (pairingToken.length == 43 && pairingToken.all {
             it in 'A'..'Z' || it in 'a'..'z' || it in '0'..'9' || it == '-' || it == '_'
-        })) { "Invalid Mobile API Studio pairing token" }
+        })) { "Invalid SimulatorApiFlow pairing token" }
     }
 
     private val executor = Executors.newSingleThreadExecutor { runnable ->
-        Thread(runnable, "MobileAPIStudio-SDK").apply { isDaemon = true }
+        Thread(runnable, "SimulatorApiFlow-SDK").apply { isDaemon = true }
     }
 
     fun send(type: String, payload: Map<String, Any?>) {

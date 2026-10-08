@@ -3,7 +3,7 @@ plugins {
 }
 
 android {
-    namespace = "dev.mobileapistudio.sdk"
+    namespace = "dev.simulatorapiflow.sdk"
     compileSdk = 37
 
     defaultConfig {

@@ -113,7 +113,7 @@ export function ProxyRulesView() {
   }
   function downloadScriptExport() {
     const url = URL.createObjectURL(new Blob([scriptExport], { type: "application/json" }));
-    const link = document.createElement("a"); link.href = url; link.download = "mobile-api-studio-scripts.mas.json"; link.click(); URL.revokeObjectURL(url);
+    const link = document.createElement("a"); link.href = url; link.download = "simulator-api-flow-scripts.mas.json"; link.click(); URL.revokeObjectURL(url);
   }
 
   function patchPattern(field: "host" | "path", patch: Partial<RulePattern>) {

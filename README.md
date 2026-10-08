@@ -5,17 +5,17 @@
 [![Apache-2.0 License][license-shield]][license-url]
 
 <div align="center">
-  <img src="apps/desktop/src-tauri/icons/128x128.png" alt="Mobile API Studio logo" width="80" height="80">
-  <h1>Mobile API Studio</h1>
+  <img src="apps/desktop/src-tauri/icons/128x128.png" alt="SimulatorApiFlow logo" width="80" height="80">
+  <h1>SimulatorApiFlow</h1>
   <p>A local-first API debugger for capturing, inspecting, replaying, mocking, and comparing development traffic in a browser workspace.</p>
   <p>
     <a href="docs/USAGE.md">Usage guide</a>
     &middot;
     <a href="#getting-started">Build from source</a>
     &middot;
-    <a href="https://github.com/DagerottDev/mobile-api-studio/issues/new?template=bug_report.md">Report a bug</a>
+    <a href="https://github.com/DagerottDev/SimulatorApiFlow/issues/new?template=bug_report.md">Report a bug</a>
     &middot;
-    <a href="https://github.com/DagerottDev/mobile-api-studio/issues/new?template=feature_request.md">Request a feature</a>
+    <a href="https://github.com/DagerottDev/SimulatorApiFlow/issues/new?template=feature_request.md">Request a feature</a>
   </p>
 </div>
 
@@ -51,7 +51,9 @@
 
 ## About The Project
 
-Mobile API Studio helps mobile developers inspect what their app sends, reproduce a failing request, test response changes, and compare behavior between sessions. Start with an iOS Simulator or Android Emulator; additional capture targets depend on the host and capture mode.
+Previously named Mobile API Studio. See the [rename and compatibility notes](docs/PROJECT_RENAME.md) when updating an existing checkout or SDK integration.
+
+SimulatorApiFlow helps mobile developers inspect what their app sends, reproduce a failing request, test response changes, and compare behavior between sessions. Start with an iOS Simulator or Android Emulator; additional capture targets depend on the host and capture mode.
 
 <a id="what-you-can-do"></a>
 
@@ -106,8 +108,8 @@ iOS Simulator workflows require macOS. Windows native runtime and Linux host cap
 Clone the repository, then install its locked JavaScript dependencies:
 
 ```sh
-git clone https://github.com/DagerottDev/mobile-api-studio.git
-cd mobile-api-studio
+git clone https://github.com/DagerottDev/SimulatorApiFlow.git
+cd SimulatorApiFlow
 pnpm install --frozen-lockfile
 ```
 
@@ -160,7 +162,7 @@ Windows uses the bundle's `start.ps1`. The bundle includes the service, worker, 
 
 Automatic Simulator routing temporarily changes HTTP/HTTPS proxies on the selected **Mac network service** and can also route other proxy-aware Mac apps. The CA is installed only in the selected Simulator. Existing active proxies/PAC block automatic setup. Uncheck **Set up Mac network routing automatically** for a manual app-scoped workflow. The SDK adds context; it does not automatically route every custom URLSession through a regular proxy. See [Simulator setup](docs/IOS_SIMULATOR_SETUP.md) for trust, scope and recovery.
 
-Android HTTPS requires development CA trust; prefer app-scoped debug trust. Android API 37 also needs the appropriate local-network permission. Apps with certificate pinning need their own debug configuration; Mobile API Studio does not bypass pinning. Optional [SDK integration](docs/SDK_INTEGRATION.md) adds app, screen, feature and source context.
+Android HTTPS requires development CA trust; prefer app-scoped debug trust. Android API 37 also needs the appropriate local-network permission. Apps with certificate pinning need their own debug configuration; SimulatorApiFlow does not bypass pinning. Optional [SDK integration](docs/SDK_INTEGRATION.md) adds app, screen, feature and source context.
 
 Open **Settings → Connection Doctor** for prerequisite, routing and TLS diagnostics. HTTP/3 is limited to supported local/reverse modes and has no Replay support. WebSocket replay and ping/pong payload inspection are unavailable; Protobuf decoding requires your descriptor and supports bounded uncompressed messages. See [Protocol inspection](docs/PROTOCOL_INSPECTION.md) for details, including engine-specific trailer limits.
 
@@ -169,11 +171,11 @@ Open **Settings → Connection Doctor** for prerequisite, routing and TLS diagno
 With the service running, use another terminal from the repository root:
 
 ```sh
-printf '{}' | python3 scripts/mas-cli.py health
-printf '{}' | python3 scripts/mas-cli.py list_sessions
+printf '{}' | python3 scripts/saf-cli.py health
+printf '{}' | python3 scripts/saf-cli.py list_sessions
 ```
 
-The CLI uses a private Unix socket on macOS/Linux or a current-user named pipe on Windows. MCP clients can run `python3 /absolute/path/to/repository/scripts/mas-cli.py --mcp`. Arguments come from stdin; custom socket paths, supported commands and JavaScript hook examples are in [Scripting and automation](docs/SCRIPTING_AUTOMATION.md) and the [usage guide](docs/USAGE.md).
+The CLI uses a private Unix socket on macOS/Linux or a current-user named pipe on Windows. MCP clients can run `python3 /absolute/path/to/repository/scripts/saf-cli.py --mcp`. Arguments come from stdin; custom socket paths, supported commands and JavaScript hook examples are in [Scripting and automation](docs/SCRIPTING_AUTOMATION.md) and the [usage guide](docs/USAGE.md).
 
 <p align="right"><a href="#readme-top">Back to top</a></p>
 
@@ -223,7 +225,7 @@ After installing dependencies, these contributor commands are available from the
 pnpm typecheck
 pnpm build
 cargo check --workspace --locked
-cargo test -p mobile-api-studio-server --locked
+cargo test -p simulator-api-flow-server --locked
 cargo test -p app-core --locked
 ```
 
@@ -262,7 +264,7 @@ Support is optional. Contributions, bug reports and documentation improvements a
 
 ## License
 
-Mobile API Studio is licensed under the [Apache License 2.0](LICENSE). Third-party dependencies retain their own licenses.
+SimulatorApiFlow is licensed under the [Apache License 2.0](LICENSE). Third-party dependencies retain their own licenses.
 
 <p align="right"><a href="#readme-top">Back to top</a></p>
 
@@ -273,11 +275,11 @@ Mobile API Studio is licensed under the [Apache License 2.0](LICENSE). Third-par
 
 <p align="right"><a href="#readme-top">Back to top</a></p>
 
-[stars-shield]: https://img.shields.io/github/stars/DagerottDev/mobile-api-studio?style=for-the-badge
-[stars-url]: https://github.com/DagerottDev/mobile-api-studio/stargazers
-[issues-shield]: https://img.shields.io/github/issues/DagerottDev/mobile-api-studio?style=for-the-badge
-[issues-url]: https://github.com/DagerottDev/mobile-api-studio/issues
-[license-shield]: https://img.shields.io/github/license/DagerottDev/mobile-api-studio?style=for-the-badge
+[stars-shield]: https://img.shields.io/github/stars/DagerottDev/SimulatorApiFlow?style=for-the-badge
+[stars-url]: https://github.com/DagerottDev/SimulatorApiFlow/stargazers
+[issues-shield]: https://img.shields.io/github/issues/DagerottDev/SimulatorApiFlow?style=for-the-badge
+[issues-url]: https://github.com/DagerottDev/SimulatorApiFlow/issues
+[license-shield]: https://img.shields.io/github/license/DagerottDev/SimulatorApiFlow?style=for-the-badge
 [license-url]: LICENSE
 [support-card]: .github/assets/buy-me-a-coffee.gif
 [coffee-url]: https://buymeacoffee.com/dagerottdev

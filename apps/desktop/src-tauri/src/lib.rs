@@ -261,7 +261,7 @@ async fn connect_device(
         diagnostics.push(ConnectionDiagnostic {
             code: "android_ca_trust_guided".into(),
             title: "HTTPS trust may require app configuration".into(),
-            message: "The emulator is routed through Mobile API Studio. HTTPS interception also requires the app to trust the mitmproxy CA.".into(),
+            message: "The emulator is routed through SimulatorApiFlow. HTTPS interception also requires the app to trust the mitmproxy CA.".into(),
             recoverable: true,
             suggested_action: Some(
                 "For development builds, trust user-added CAs with Android network security configuration, or install the CA manually from mitm.it. Certificate-pinned apps require an app-side debug path rather than proxy bypassing."
@@ -288,7 +288,7 @@ async fn connect_device(
             code: "ios_proxy_manual_configuration".into(),
             title: "Configure the Simulator proxy manually".into(),
             message: format!(
-                "The capture engine is listening on 127.0.0.1:{DEFAULT_CAPTURE_PORT}, but Mobile API Studio does not change macOS/iOS proxy settings automatically."
+                "The capture engine is listening on 127.0.0.1:{DEFAULT_CAPTURE_PORT}, but SimulatorApiFlow does not change macOS/iOS proxy settings automatically."
             ),
             recoverable: true,
             suggested_action: Some(
@@ -398,7 +398,7 @@ fn recover_pending_rollback(state: State<'_, AppState>) -> Result<Vec<Connection
         DevicePlatform::Ios => diagnostics.push(ConnectionDiagnostic {
             code: "ios_ca_left_installed".into(),
             title: "Simulator CA remains installed".into(),
-            message: "Mobile API Studio does not reset the Simulator keychain automatically because that could delete unrelated developer credentials.".into(),
+            message: "SimulatorApiFlow does not reset the Simulator keychain automatically because that could delete unrelated developer credentials.".into(),
             recoverable: true,
             suggested_action: Some(
                 "You may leave the locally generated CA installed, disable its full-trust toggle, or remove it manually if desired."
@@ -538,13 +538,13 @@ fn resolve_addon_path(app: &tauri::App) -> Result<PathBuf, String> {
     #[cfg(debug_assertions)]
     {
         let development_path = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
-            .join("../../../sidecars/mitm-addon/mas_bridge.py");
+            .join("../../../sidecars/mitm-addon/saf_bridge.py");
         if development_path.is_file() {
             return Ok(development_path);
         }
     }
     let resource_dir = app.path().resource_dir().map_err(|error| error.to_string())?;
-    let addon_path = resource_dir.join("sidecars/mitm-addon/mas_bridge.py");
+    let addon_path = resource_dir.join("sidecars/mitm-addon/saf_bridge.py");
     if !addon_path.is_file() {
         return Err(format!("Capture addon not found at {}", addon_path.display()));
     }
@@ -671,5 +671,5 @@ pub fn run() {
             ai_commands::list_ai_results,
         ])
         .run(tauri::generate_context!())
-        .expect("error while running Mobile API Studio");
+        .expect("error while running SimulatorApiFlow");
 }

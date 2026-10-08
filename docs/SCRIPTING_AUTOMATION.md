@@ -28,14 +28,14 @@ General workspace export omits script source. In Mocks, select a script rule and
 On macOS/Linux the service creates `<data-dir>/control/socket`, with a user-owned mode-0700 parent and mode-0600 socket. It checks kernel-reported peer UID, rejects symlinks and an existing live listener, bounds requests/responses, and removes its own socket on orderly shutdown. This private channel does not use the browser token or listen on the LAN.
 
 ```sh
-printf '{}' | python3 scripts/mas-cli.py --socket '/your/data-dir/control/socket' health
-python3 scripts/mas-cli.py --socket '/your/data-dir/control/socket' --mcp
+printf '{}' | python3 scripts/saf-cli.py --socket '/your/data-dir/control/socket' health
+python3 scripts/saf-cli.py --socket '/your/data-dir/control/socket' --mcp
 ```
 
 The optional MCP bridge uses JSON-RPC over stdio with initialization and a single allowlisted tool. Available operations cover capture targets, sessions/flows/search, proxy rules, network profiles, and selected interchange/workspace export. Requests are capped at 128 KiB and responses at 16 MiB; arbitrary commands, AI/secret-store access and direct replay are excluded. Export output appears in the CLI or MCP tool result for review; it is not uploaded automatically.
 
 ## Verification and acceptance
 
-Run `cargo test -p app-core -p mobile-api-studio-script-worker --offline --locked`, `cargo test -p mobile-api-studio-server control_socket --offline --locked`, `python3 scripts/check-mas-cli.py`, the frontend production build, and `python3 scripts/check-script-hooks.py` after building the service and worker. The live hook check uses disposable loopback data and never changes host proxy settings.
+Run `cargo test -p app-core -p simulator-api-flow-script-worker --offline --locked`, `cargo test -p simulator-api-flow-server control_socket --offline --locked`, `python3 scripts/check-saf-cli.py`, the frontend production build, and `python3 scripts/check-script-hooks.py` after building the service and worker. The live hook check uses disposable loopback data and never changes host proxy settings.
 
 Current core checks pass, including disabled script import, rejection of scripts in older bundles, and explicit selected export. The worker limit check, four private-socket checks, CLI/MCP self-check and real service/MCP lifecycle check pass. The real loopback hook check passes request header/body edits, response status/body edits, 131,073-byte output, infinite-loop traffic stop with both queue and persisted flow diagnostics, WebSocket text/binary transforms and drop, and the sixteen-hook stage cap. The network-condition regression also passes after the shared HTTP framing fix. At that source-verification checkpoint, browser preview automation was blocked by tool security policy. Subsequent owner-authorized Mac computer use passed bounded script/mock, Compose, Compare and network workflows; portable package and device checks are recorded in [PLATFORM_ACCEPTANCE.md](PLATFORM_ACCEPTANCE.md). Those later cases do not establish full UI, physical-device or release acceptance.

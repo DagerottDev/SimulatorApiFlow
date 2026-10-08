@@ -74,7 +74,7 @@ mod tests {
     #[test]
     fn concurrent_writes_to_one_path_do_not_share_a_temporary_file() {
         let directory = std::env::temp_dir().join(format!(
-            "mobile-api-studio-atomic-write-{}-{}",
+            "simulator-api-flow-atomic-write-{}-{}",
             std::process::id(),
             NEXT_TEMPORARY_FILE.fetch_add(1, Ordering::Relaxed)
         ));

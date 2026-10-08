@@ -347,7 +347,7 @@ pub fn export_workspace_to_download(
             )
         })?;
     let path = download_dir.join(format!(
-        "mobile-api-studio-workspace-{}.mas.json",
+        "simulator-api-flow-workspace-{}.mas.json",
         bundle.exported_at
     ));
     fs::write(&path, bytes)

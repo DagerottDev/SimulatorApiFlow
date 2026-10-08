@@ -13,7 +13,7 @@ import time
 import urllib.error
 import urllib.request
 
-binary = Path(sys.argv[1] if len(sys.argv) > 1 else "target/debug/mobile-api-studio-sharing-server").resolve()
+binary = Path(sys.argv[1] if len(sys.argv) > 1 else "target/debug/simulator-api-flow-sharing-server").resolve()
 owner = "1" * 64  # Synthetic check credential only; never a production bootstrap token.
 with tempfile.TemporaryDirectory(prefix="mas-sharing-http-") as temp:
     os.chmod(temp, 0o700)
@@ -97,7 +97,7 @@ with tempfile.TemporaryDirectory(prefix="mas-sharing-http-") as temp:
         call("PUT", "/v1/workspace", unsafe, status=400)
         assert data("GET", "/v1/workspace")["revision"] == 1
 
-        har = {"log": {"version": "1.2", "creator": {"name": "Mobile API Studio", "version": "0.5"}, "entries": [{
+        har = {"log": {"version": "1.2", "creator": {"name": "SimulatorApiFlow", "version": "0.5"}, "entries": [{
             "startedDateTime": "2026-10-02T00:00:00Z", "time": 1,
             "request": {"method": "GET", "url": "https://example.test/path", "httpVersion": "HTTP/1.1",
                         "headers": [{"name": "Authorization", "value": "<redacted>"}], "cookies": [], "queryString": [],

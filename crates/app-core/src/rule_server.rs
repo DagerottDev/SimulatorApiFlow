@@ -399,7 +399,7 @@ mod tests {
             assert!(query(port,b"GET / HTTP/1.1\r\n\r\n").await.is_empty());
             #[cfg(unix)]
             {
-                let addon=std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../sidecars/mitm-addon/mas_bridge.py");
+                let addon=std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../sidecars/mitm-addon/saf_bridge.py");
                 let script=r#"
 import ast, asyncio, json, os, sys, types
 source = ast.parse(open(sys.argv[1], encoding="utf-8").read())

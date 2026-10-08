@@ -1,6 +1,6 @@
 # App-Aware SDK Integration
 
-Mobile API Studio can enrich proxy-captured requests with app metadata such as the current screen, feature, source file/function, custom attributes, and nearby logs.
+SimulatorApiFlow can enrich proxy-captured requests with app metadata such as the current screen, feature, source file/function, custom attributes, and nearby logs.
 
 The SDK is optional. Proxy capture continues to work normally when no SDK is installed.
 
@@ -30,33 +30,33 @@ The desktop server binds only to host loopback. The Android Emulator reaches tha
 The package is located at:
 
 ```text
-sdks/ios/MobileAPIStudio
+sdks/ios/SimulatorApiFlow
 ```
 
 Add it as a local Swift Package during development, then configure it early in app startup:
 
 ```swift
-import MobileAPIStudio
+import SimulatorApiFlow
 
-MobileAPIStudio.configure()
+SimulatorApiFlow.configure()
 ```
 
 The default configuration is enabled in `DEBUG` builds and disabled otherwise. You can explicitly control it:
 
 ```swift
-MobileAPIStudio.configure(
+SimulatorApiFlow.configure(
     .init(enabled: isInternalDebugBuild)
 )
 ```
 
-Calling `MobileAPIStudio.disable()` stops telemetry and request instrumentation.
+Calling `SimulatorApiFlow.disable()` stops telemetry and request instrumentation.
 
 ### Add app context
 
 Set context at screen or feature boundaries:
 
 ```swift
-MobileAPIStudio.setContext(
+SimulatorApiFlow.setContext(
     screen: "Product Detail",
     feature: "Delivery Promise",
     attributes: ["productType": "fashion"]
@@ -68,7 +68,7 @@ MobileAPIStudio.setContext(
 Structured logs inherit the current context:
 
 ```swift
-MobileAPIStudio.log(
+SimulatorApiFlow.log(
     "Refreshing delivery modes",
     attributes: ["reason": "pincode_changed"]
 )
@@ -79,7 +79,7 @@ MobileAPIStudio.log(
 For URLSession-based clients, instrument the configuration before creating the session:
 
 ```swift
-let config = MobileAPIStudio.instrument(URLSessionConfiguration.default)
+let config = SimulatorApiFlow.instrument(URLSessionConfiguration.default)
 let session = URLSession(configuration: config)
 ```
 
@@ -93,14 +93,14 @@ For a custom client, instrument a `URLRequest` directly:
 
 ```swift
 var request = URLRequest(url: url)
-let requestID = MobileAPIStudio.instrument(
+let requestID = SimulatorApiFlow.instrument(
     &request,
     feature: "Load PDP"
 )
 
 customClient.send(request) { response, error in
     if let requestID {
-        MobileAPIStudio.complete(
+        SimulatorApiFlow.complete(
             requestID: requestID,
             response: response,
             error: error
@@ -119,17 +119,17 @@ A minimal SwiftUI integration example is available at:
 samples/ios-sdk-demo
 ```
 
-It uses an XcodeGen `project.yml`. Generate/open the sample project with your normal XcodeGen workflow, boot an iOS Simulator, start Mobile API Studio, then tap **Send sample request**.
+It uses an XcodeGen `project.yml`. Generate/open the sample project with your normal XcodeGen workflow, boot an iOS Simulator, start SimulatorApiFlow, then tap **Send sample request**.
 
 ## Android
 
 The Android library lives at:
 
 ```text
-sdks/android/mobile-api-studio
+sdks/android/simulator-api-flow
 ```
 
-The repository Android SDK workspace includes the `:mobile-api-studio` library and `:sample` application modules. Its AGP 9.3.1 build requires JDK 21, Gradle 9.5 or newer, Android API 37 and Build Tools 36.0.0. With those installed and `ANDROID_HOME` pointing to the SDK:
+The repository Android SDK workspace includes the `:simulator-api-flow` library and `:sample` application modules. Its AGP 9.3.1 build requires JDK 21, Gradle 9.5 or newer, Android API 37 and Build Tools 36.0.0. With those installed and `ANDROID_HOME` pointing to the SDK:
 
 ```sh
 gradle --project-dir sdks/android assembleDebug
@@ -140,22 +140,22 @@ No Gradle wrapper is committed.
 Configure the SDK from your app using a debug/internal-build condition:
 
 ```kotlin
-MobileAPIStudio.configure(
+SimulatorApiFlow.configure(
     context = applicationContext,
-    configuration = MobileAPIStudioConfiguration(
+    configuration = SimulatorApiFlowConfiguration(
         enabled = BuildConfig.DEBUG,
     ),
 )
 ```
 
-The Android configuration defaults to `enabled = false`, so the library is a pass-through unless the app explicitly opts in. `MobileAPIStudio.disable()` can turn it off at runtime.
+The Android configuration defaults to `enabled = false`, so the library is a pass-through unless the app explicitly opts in. `SimulatorApiFlow.disable()` can turn it off at runtime.
 
 Apps targeting Android 17/API 37 or higher must declare `android.permission.ACCESS_LOCAL_NETWORK` and obtain its runtime grant before enabling the SDK or contacting the desktop proxy. Check the permission again before local requests and keep the SDK disabled on denial/revocation. The SDK does not request app permissions; the sample uses native Activity permission APIs. Apps targeting API 36 or lower should not request this permission. See [Android local-network guidance](https://developer.android.com/privacy-and-security/local-network-permission).
 
 ### Add app context
 
 ```kotlin
-MobileAPIStudio.setContext(
+SimulatorApiFlow.setContext(
     screen = "Product Detail",
     feature = "Delivery Promise",
     attributes = mapOf("productType" to "fashion"),
@@ -165,7 +165,7 @@ MobileAPIStudio.setContext(
 `setContext` captures the app call site's file/function/line from the stack. Logs inherit the context:
 
 ```kotlin
-MobileAPIStudio.log(
+SimulatorApiFlow.log(
     message = "Refreshing delivery modes",
     attributes = mapOf("reason" to "pincode_changed"),
 )
@@ -177,32 +177,32 @@ Add the interceptor to the application's development/debug OkHttp client:
 
 ```kotlin
 val client = OkHttpClient.Builder()
-    .addInterceptor(MobileAPIStudioInterceptor())
+    .addInterceptor(SimulatorApiFlowInterceptor())
     .build()
 ```
 
 When the SDK is disabled, the interceptor forwards the exact original request without adding a correlation header.
 
-The interceptor preserves source metadata already set by `MobileAPIStudio.setContext`; it intentionally does not treat OkHttp framework stack frames as the source call site.
+The interceptor preserves source metadata already set by `SimulatorApiFlow.setContext`; it intentionally does not treat OkHttp framework stack frames as the source call site.
 
 ### Manual/custom networking integration
 
 For clients other than OkHttp:
 
 ```kotlin
-val requestId = MobileAPIStudio.beginRequest(
+val requestId = SimulatorApiFlow.beginRequest(
     method = "POST",
     url = url,
     feature = "Add to Bag",
 )
 
-// Add requestId to MobileAPIStudio.correlationHeader on the actual request.
+// Add requestId to SimulatorApiFlow.correlationHeader on the actual request.
 
 try {
     val status = customClient.execute()
-    requestId?.let { MobileAPIStudio.complete(it, statusCode = status) }
+    requestId?.let { SimulatorApiFlow.complete(it, statusCode = status) }
 } catch (error: Throwable) {
-    requestId?.let { MobileAPIStudio.complete(it, statusCode = null, error = error) }
+    requestId?.let { SimulatorApiFlow.complete(it, statusCode = null, error = error) }
     throw error
 }
 ```
@@ -249,14 +249,14 @@ Historical sessions display their attributed app ID once a correlated SDK reques
 - It does not bypass certificate pinning or modify third-party applications.
 - The SDK does not replace proxy capture; it enriches it.
 - SDK telemetry is local-only and best-effort. A telemetry failure must never fail the app's real network request.
-- Do not put secrets into context attributes or log messages. They are stored locally in the Mobile API Studio workspace database.
+- Do not put secrets into context attributes or log messages. They are stored locally in the SimulatorApiFlow workspace database.
 - Keep production/release instrumentation disabled unless your own internal build policy explicitly requires otherwise.
 
 ## Troubleshooting
 
 If the app does not appear under **SDK**:
 
-1. confirm Mobile API Studio desktop is running;
+1. confirm SimulatorApiFlow desktop is running;
 2. confirm the SDK screen reports **ingestion online**;
 3. confirm the SDK is enabled in the app build;
 4. on iOS Simulator, confirm the SDK uses `127.0.0.1:8182`;

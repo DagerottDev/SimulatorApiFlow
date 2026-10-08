@@ -3,11 +3,11 @@ plugins {
 }
 
 android {
-    namespace = "dev.mobileapistudio.sample"
+    namespace = "dev.simulatorapiflow.sample"
     compileSdk = 37
 
     defaultConfig {
-        applicationId = "dev.mobileapistudio.sample"
+        applicationId = "dev.simulatorapiflow.sample"
         minSdk = 23
         targetSdk = 37
         versionCode = 1
@@ -16,6 +16,6 @@ android {
 }
 
 dependencies {
-    implementation(project(":mobile-api-studio"))
+    implementation(project(":simulator-api-flow"))
     implementation("com.squareup.okhttp3:okhttp:5.4.0")
 }

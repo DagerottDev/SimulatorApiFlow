@@ -570,7 +570,7 @@ async fn connect_capture_target(
                 title: "Set the device's manual proxy".into(),
                 message: format!("Configure this development device to use {}:{}. Only the paired address can connect while this session is active.", active.lan_guard.as_ref().unwrap().host, active.lan_guard.as_ref().unwrap().port),
                 recoverable: true,
-                suggested_action: Some(format!("Install the capture CA from mitm.it while using this proxy, then enable full trust on iOS or development CA trust in the Android app. Configure SDK telemetry separately at http://{}:{DEVICE_SDK_PORT} with the session pairing token. Disable the device proxy when done; Mobile API Studio did not change its settings.", active.lan_guard.as_ref().unwrap().host)),
+                suggested_action: Some(format!("Install the capture CA from mitm.it while using this proxy, then enable full trust on iOS or development CA trust in the Android app. Configure SDK telemetry separately at http://{}:{DEVICE_SDK_PORT} with the session pairing token. Disable the device proxy when done; SimulatorApiFlow did not change its settings.", active.lan_guard.as_ref().unwrap().host)),
             });
         } else if matches!(&target.kind, CaptureTargetKind::ProxyListener { .. }) {
             diagnostics.push(ConnectionDiagnostic {
@@ -762,7 +762,7 @@ async fn connect_device_with_proxy(
             diagnostics.push(ConnectionDiagnostic {
                 code: "android_ca_trust_guided".into(),
                 title: "HTTPS trust may require app configuration".into(),
-                message: "The emulator is routed through Mobile API Studio. HTTPS interception also requires the app to trust the mitmproxy CA.".into(),
+                message: "The emulator is routed through SimulatorApiFlow. HTTPS interception also requires the app to trust the mitmproxy CA.".into(),
                 recoverable: true,
                 suggested_action: Some(
                     "For development builds, trust user-added CAs with Android network security configuration, or install the CA manually from mitm.it. Certificate-pinned apps require an app-side debug path rather than proxy bypassing."
@@ -790,7 +790,7 @@ async fn connect_device_with_proxy(
                 diagnostics.push(ConnectionDiagnostic {
                     code: "ios_automatic_setup_complete".into(),
                     title: "Simulator setup complete".into(),
-                    message: "The capture CA is installed and the selected Mac network service routes HTTP/HTTPS through Mobile API Studio. Other proxy-aware Mac apps may also use this route.".into(),
+                    message: "The capture CA is installed and the selected Mac network service routes HTTP/HTTPS through SimulatorApiFlow. Other proxy-aware Mac apps may also use this route.".into(),
                     recoverable: true,
                     suggested_action: Some("Disable routing to restore the previous network settings while keeping capture open. Certificate-pinned apps still need their own debug configuration.".into()),
                 });
@@ -991,7 +991,7 @@ async fn recover_pending_rollback(
         DevicePlatform::Ios => diagnostics.push(ConnectionDiagnostic {
             code: "ios_ca_left_installed".into(),
             title: "Simulator CA remains installed".into(),
-            message: "Mobile API Studio does not reset the Simulator keychain automatically because that could delete unrelated developer credentials.".into(),
+            message: "SimulatorApiFlow does not reset the Simulator keychain automatically because that could delete unrelated developer credentials.".into(),
             recoverable: true,
             suggested_action: Some(
                 "You may leave the locally generated CA installed, disable its full-trust toggle, or remove it manually if desired."
@@ -1189,7 +1189,7 @@ fn initialize_state(app_data_dir: PathBuf, addon_path: PathBuf) -> Result<AppSta
 
 fn resolve_addon_path() -> Result<PathBuf, String> {
     let path = std::env::var_os("MAS_ADDON_PATH").map(PathBuf::from).unwrap_or_else(||
-        PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../sidecars/mitm-addon/mas_bridge.py"));
+        PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../sidecars/mitm-addon/saf_bridge.py"));
     if path.is_file() {
         Ok(path)
     } else {

@@ -1,6 +1,6 @@
 import Foundation
 
-public struct MobileAPIStudioConfiguration: Sendable {
+public struct SimulatorApiFlowConfiguration: Sendable {
     public var appID: String
     public var appName: String
     public var appVersion: String?
@@ -18,7 +18,7 @@ public struct MobileAPIStudioConfiguration: Sendable {
         appBuild: String? = Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String,
         desktopBaseURL: URL = URL(string: "http://127.0.0.1:8182")!,
         pairingToken: String? = nil,
-        enabled: Bool = MobileAPIStudio.defaultEnabled
+        enabled: Bool = SimulatorApiFlow.defaultEnabled
     ) {
         self.appID = appID
         self.appName = appName
@@ -30,7 +30,7 @@ public struct MobileAPIStudioConfiguration: Sendable {
     }
 }
 
-public struct MobileAPIStudioSource: Sendable {
+public struct SimulatorApiFlowSource: Sendable {
     public var file: String?
     public var function: String?
     public var line: UInt?
@@ -50,17 +50,17 @@ public struct MobileAPIStudioSource: Sendable {
     }
 }
 
-public struct MobileAPIStudioContext: Sendable {
+public struct SimulatorApiFlowContext: Sendable {
     public var screen: String?
     public var feature: String?
     public var attributes: [String: String]
-    public var source: MobileAPIStudioSource?
+    public var source: SimulatorApiFlowSource?
 
     public init(
         screen: String? = nil,
         feature: String? = nil,
         attributes: [String: String] = [:],
-        source: MobileAPIStudioSource? = nil
+        source: SimulatorApiFlowSource? = nil
     ) {
         self.screen = screen
         self.feature = feature
@@ -77,14 +77,14 @@ public struct MobileAPIStudioContext: Sendable {
     }
 }
 
-public enum MobileAPIStudioLogLevel: String, Sendable {
+public enum SimulatorApiFlowLogLevel: String, Sendable {
     case debug
     case info
     case warning
     case error
 }
 
-public struct MobileAPIStudioInstrumentedRequest: Sendable {
+public struct SimulatorApiFlowInstrumentedRequest: Sendable {
     public let requestID: String
     public let request: URLRequest
 

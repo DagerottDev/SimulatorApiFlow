@@ -4,7 +4,7 @@
 
     <application
         android:allowBackup="false"
-        android:label="Mobile API Studio Sample"
+        android:label="SimulatorApiFlow Sample"
         android:networkSecurityConfig="@xml/network_security_config"
         android:theme="@style/AppTheme">
         <activity

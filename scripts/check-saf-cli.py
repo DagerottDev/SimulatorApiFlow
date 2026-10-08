@@ -9,8 +9,8 @@ import tempfile
 import threading
 from pathlib import Path
 
-cli = Path(__file__).with_name("mas-cli.py")
-with tempfile.TemporaryDirectory(prefix="mas-cli-check-") as temporary:
+cli = Path(__file__).with_name("saf-cli.py")
+with tempfile.TemporaryDirectory(prefix="saf-cli-check-") as temporary:
     control = Path(temporary) / "control"
     control.mkdir(mode=0o700)
     control.chmod(0o700)
@@ -38,6 +38,14 @@ with tempfile.TemporaryDirectory(prefix="mas-cli-check-") as temporary:
     assert json.loads(result.stdout) == {"ok": True}
     assert received == [{"command": "health", "args": {"check": 1}}]
 
+    thread = threading.Thread(target=serve_once)
+    thread.start()
+    legacy = subprocess.run([sys.executable, str(cli.with_name("mas-cli.py")), "--socket", str(endpoint), "health"], input=b"{}", capture_output=True)
+    thread.join(5)
+    assert legacy.returncode == 0, legacy.stderr.decode()
+    assert json.loads(legacy.stdout) == {"ok": True}
+    assert received[-1] == {"command": "health", "args": {}}
+
     def serve_array():
         connection, _ = server.accept()
         with connection:
@@ -47,18 +55,27 @@ with tempfile.TemporaryDirectory(prefix="mas-cli-check-") as temporary:
             assert json.loads(request) == {"command": "health", "args": {}}
             connection.sendall(b'[{"id":1}]')
 
-    thread = threading.Thread(target=serve_array)
+    def serve_mcp():
+        for _ in range(2):
+            serve_array()
+
+    thread = threading.Thread(target=serve_mcp)
     thread.start()
     messages = [
         {"jsonrpc": "2.0", "id": 1, "method": "initialize", "params": {}},
         {"jsonrpc": "2.0", "method": "notifications/initialized"},
-        {"jsonrpc": "2.0", "id": 2, "method": "tools/call", "params": {"name": "mobile_api_studio", "arguments": {"command": "health", "args": {}}}},
+        {"jsonrpc": "2.0", "id": 2, "method": "tools/list", "params": {}},
+        {"jsonrpc": "2.0", "id": 3, "method": "tools/call", "params": {"name": "simulator_api_flow", "arguments": {"command": "health", "args": {}}}},
+        {"jsonrpc": "2.0", "id": 4, "method": "tools/call", "params": {"name": "mobile_api_studio", "arguments": {"command": "health", "args": {}}}},
     ]
     mcp = subprocess.run([sys.executable, str(cli), "--socket", str(endpoint), "--mcp"], input=b"\n".join(json.dumps(message).encode() for message in messages) + b"\n", capture_output=True)
     thread.join(5)
     assert mcp.returncode == 0, mcp.stderr.decode()
-    tool_result = json.loads(mcp.stdout.splitlines()[-1])["result"]
-    assert tool_result["structuredContent"] == {"result": [{"id": 1}]}
+    replies = [json.loads(line)["result"] for line in mcp.stdout.splitlines()]
+    assert replies[0]["serverInfo"]["name"] == "simulator-api-flow"
+    assert replies[1]["tools"][0]["name"] == "simulator_api_flow"
+    for tool_result in replies[2:]:
+        assert tool_result["structuredContent"] == {"result": [{"id": 1}]}
 
     oversized = subprocess.run([sys.executable, str(cli), "--socket", str(endpoint), "--mcp"], input=b"x" * (128 * 1024 + 1) + b"\n", capture_output=True)
     assert json.loads(oversized.stdout)["error"]["message"] == "MCP message exceeds 128 KiB"
@@ -74,4 +91,4 @@ with tempfile.TemporaryDirectory(prefix="mas-cli-check-") as temporary:
     assert symlink_denied.returncode == 2 and b"mode 0600" in symlink_denied.stderr
     server.close()
 
-print("mas-cli socket authentication checks passed")
+print("saf-cli socket authentication checks passed")

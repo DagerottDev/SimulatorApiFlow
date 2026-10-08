@@ -1,6 +1,6 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "Mobile API Studio",
+  "productName": "SimulatorApiFlow",
   "version": "0.0.1",
   "identifier": "dev.mobileapistudio.desktop",
   "build": {
@@ -12,7 +12,7 @@
   "app": {
     "windows": [
       {
-        "title": "Mobile API Studio",
+        "title": "SimulatorApiFlow",
         "width": 1320,
         "height": 840,
         "minWidth": 900,
@@ -30,7 +30,7 @@
       "signingIdentity": "-"
     },
     "resources": {
-      "../../../sidecars/mitm-addon/mas_bridge.py": "sidecars/mitm-addon/mas_bridge.py"
+      "../../../sidecars/mitm-addon/saf_bridge.py": "sidecars/mitm-addon/saf_bridge.py"
     }
   }
 }

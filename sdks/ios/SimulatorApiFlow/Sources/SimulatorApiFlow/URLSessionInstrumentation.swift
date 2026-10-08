@@ -1,12 +1,12 @@
 import Foundation
 
-public final class MobileAPIStudioURLProtocol: URLProtocol, @unchecked Sendable {
-    private static let handledKey = "dev.mobileapistudio.urlprotocol.handled"
+public final class SimulatorApiFlowURLProtocol: URLProtocol, @unchecked Sendable {
+    private static let handledKey = "dev.simulatorapiflow.urlprotocol.handled"
     private var dataTask: URLSessionDataTask?
     private var requestID: String?
 
     public override class func canInit(with request: URLRequest) -> Bool {
-        guard MobileAPIStudio.isEnabled,
+        guard SimulatorApiFlow.isEnabled,
               let url = request.url,
               let scheme = url.scheme?.lowercased(),
               scheme == "http" || scheme == "https",
@@ -28,7 +28,7 @@ public final class MobileAPIStudioURLProtocol: URLProtocol, @unchecked Sendable 
         URLProtocol.setProperty(true, forKey: Self.handledKey, in: mutable)
         var forwarded = mutable as URLRequest
 
-        if let instrumented = MobileAPIStudio.autoInstrument(forwarded) {
+        if let instrumented = SimulatorApiFlow.autoInstrument(forwarded) {
             requestID = instrumented.requestID
             forwarded = instrumented.request
             let marked = (forwarded as NSURLRequest).mutableCopy() as! NSMutableURLRequest
@@ -38,13 +38,13 @@ public final class MobileAPIStudioURLProtocol: URLProtocol, @unchecked Sendable 
 
         let configuration = URLSessionConfiguration.ephemeral
         configuration.protocolClasses = (configuration.protocolClasses ?? []).filter {
-            $0 != MobileAPIStudioURLProtocol.self
+            $0 != SimulatorApiFlowURLProtocol.self
         }
         let session = URLSession(configuration: configuration)
         dataTask = session.dataTask(with: forwarded) { [weak self] data, response, error in
             guard let self else { return }
             if let requestID = self.requestID {
-                MobileAPIStudio.complete(requestID: requestID, response: response, error: error)
+                SimulatorApiFlow.complete(requestID: requestID, response: response, error: error)
             }
             if let error {
                 self.client?.urlProtocol(self, didFailWithError: error)
@@ -63,7 +63,7 @@ public final class MobileAPIStudioURLProtocol: URLProtocol, @unchecked Sendable 
 
     public override func stopLoading() {
         if let requestID {
-            MobileAPIStudio.complete(requestID: requestID, error: URLError(.cancelled))
+            SimulatorApiFlow.complete(requestID: requestID, error: URLError(.cancelled))
         }
         dataTask?.cancel()
         dataTask = nil

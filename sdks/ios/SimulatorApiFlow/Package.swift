@@ -2,18 +2,18 @@
 import PackageDescription
 
 let package = Package(
-    name: "MobileAPIStudio",
+    name: "SimulatorApiFlow",
     platforms: [
         .iOS(.v15),
         .macOS(.v12)
     ],
     products: [
-        .library(name: "MobileAPIStudio", targets: ["MobileAPIStudio"])
+        .library(name: "SimulatorApiFlow", targets: ["SimulatorApiFlow"])
     ],
     targets: [
         .target(
-            name: "MobileAPIStudio",
-            path: "Sources/MobileAPIStudio"
+            name: "SimulatorApiFlow",
+            path: "Sources/SimulatorApiFlow"
         )
     ]
 )

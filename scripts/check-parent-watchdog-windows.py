@@ -7,7 +7,7 @@ from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import patch
 
-source = Path(__file__).resolve().parents[1] / 'sidecars/mitm-addon/mas_bridge.py'
+source = Path(__file__).resolve().parents[1] / 'sidecars/mitm-addon/saf_bridge.py'
 names = {'_shutdown_if_service_gone', '_watch_service_parent', '_start_service_parent_watchdog'}
 tree = ast.parse(source.read_text())
 functions = ast.Module(body=[item for item in tree.body if isinstance(item, ast.FunctionDef) and item.name in names], type_ignores=[])

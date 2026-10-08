@@ -1,4 +1,4 @@
-"""Run after cargo build -p mobile-api-studio-server; disposable loopback data only."""
+"""Run after cargo build -p simulator-api-flow-server; disposable loopback data only."""
 import concurrent.futures
 import http.client
 import http.server
@@ -37,7 +37,7 @@ with tempfile.TemporaryDirectory(prefix='mas-network-check-') as temporary:
     threading.Thread(target=origin.serve_forever, daemon=True).start()
     service_port, capture_port = free_port(), free_port()
     while capture_port == service_port: capture_port = free_port()
-    binary = os.environ.get('MAS_SERVER_BINARY', str(root / 'target/debug/mobile-api-studio-server'))
+    binary = os.environ.get('MAS_SERVER_BINARY', str(root / 'target/debug/simulator-api-flow-server'))
     with open(Path(temporary) / 'service.log', 'w+') as log:
         service = subprocess.Popen([binary, '--port', str(service_port), '--no-open', '--data-dir', temporary], cwd=root, stdout=log, stderr=subprocess.STDOUT)
         token = None

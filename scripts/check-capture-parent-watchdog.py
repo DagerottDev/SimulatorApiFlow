@@ -105,9 +105,9 @@ def main():
     parser.add_argument("--bundle", type=Path, required=True, help="path to the unpacked portable bundle")
     args = parser.parse_args()
     bundle = args.bundle.resolve()
-    binary = bundle / "bin" / "mobile-api-studio-server"
-    addon = bundle / "sidecars" / "mitm-addon" / "mas_bridge.py"
-    cli = bundle / "cli" / "mas-cli.py"
+    binary = bundle / "bin" / "simulator-api-flow-server"
+    addon = bundle / "sidecars" / "mitm-addon" / "saf_bridge.py"
+    cli = bundle / "cli" / "saf-cli.py"
     for path in (binary, addon, cli):
         if not path.is_file():
             raise SystemExit(f"bundle is missing {path}")

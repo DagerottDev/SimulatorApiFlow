@@ -1,6 +1,6 @@
 # Platform support
 
-Mobile API Studio is a source-built localhost service with a browser UI. It does not currently publish packaged installers. Source launchers use the checkout assets. The portable bundle includes the UI, addon, and QuickJS worker and resolves them from its own directory; it can run outside the checkout.
+SimulatorApiFlow is a source-built localhost service with a browser UI. It does not currently publish packaged installers. Source launchers use the checkout assets. The portable bundle includes the UI, addon, and QuickJS worker and resolves them from its own directory; it can run outside the checkout.
 
 | Host | Local service and browser UI | Secure environment storage | iOS Simulator | Android Emulator | Local CLI/MCP |
 | --- | --- | --- | --- | --- | --- |
@@ -43,7 +43,7 @@ Back up `app.db` before any schema migration. Stop the service normally so it ca
 After installing the source-build prerequisites, create a bundle for the current host with:
 
 ```sh
-python3 scripts/package-local.py /path/to/empty/mobile-api-studio
+python3 scripts/package-local.py /path/to/empty/simulator-api-flow
 ```
 
 The bundle contains the service and QuickJS worker, built UI, mitmproxy addon, Python CLI, and launchers. It can be moved as a directory; the launchers resolve the UI and addon from the bundle root, and the worker is discovered beside the service. mitmproxy, Python, and Android Platform Tools remain host prerequisites. No native installer is produced.

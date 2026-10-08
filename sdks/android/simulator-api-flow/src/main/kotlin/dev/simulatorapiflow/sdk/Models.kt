@@ -1,10 +1,10 @@
-package dev.mobileapistudio.sdk
+package dev.simulatorapiflow.sdk
 
 import android.content.Context
 import android.os.Build
 import okhttp3.Request
 
-public data class MobileAPIStudioConfiguration(
+public data class SimulatorApiFlowConfiguration(
     val desktopHost: String = "10.0.2.2",
     val desktopPort: Int = 8182,
     val pairingToken: String? = null,
@@ -14,7 +14,7 @@ public data class MobileAPIStudioConfiguration(
     val appVersion: String? = null,
     val appBuild: String? = null,
 ) {
-    override fun toString(): String = "MobileAPIStudioConfiguration(pairingToken=<redacted>)"
+    override fun toString(): String = "SimulatorApiFlowConfiguration(pairingToken=<redacted>)"
 
     internal fun resolved(context: Context): ResolvedConfiguration {
         val packageName = context.packageName
@@ -52,7 +52,7 @@ internal data class ResolvedConfiguration(
     override fun toString(): String = "ResolvedConfiguration(pairingToken=<redacted>)"
 }
 
-public data class MobileAPIStudioSource(
+public data class SimulatorApiFlowSource(
     val file: String? = null,
     val function: String? = null,
     val line: Int? = null,
@@ -64,11 +64,11 @@ public data class MobileAPIStudioSource(
     }
 }
 
-public data class MobileAPIStudioContext(
+public data class SimulatorApiFlowContext(
     val screen: String? = null,
     val feature: String? = null,
     val attributes: Map<String, String> = emptyMap(),
-    val source: MobileAPIStudioSource? = null,
+    val source: SimulatorApiFlowSource? = null,
 ) {
     internal fun toWire(): Map<String, Any> = buildMap {
         screen?.let { put("screen", it) }
@@ -78,14 +78,14 @@ public data class MobileAPIStudioContext(
     }
 }
 
-public enum class MobileAPIStudioLogLevel(internal val wireValue: String) {
+public enum class SimulatorApiFlowLogLevel(internal val wireValue: String) {
     DEBUG("debug"),
     INFO("info"),
     WARNING("warning"),
     ERROR("error"),
 }
 
-public data class MobileAPIStudioInstrumentedRequest(
+public data class SimulatorApiFlowInstrumentedRequest(
     val requestId: String,
     val request: Request,
 )

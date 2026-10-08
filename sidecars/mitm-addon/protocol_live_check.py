@@ -1,7 +1,7 @@
 import json, os, pathlib, socket, ssl, subprocess, tempfile, time, shutil
 
 WORK = pathlib.Path(tempfile.mkdtemp(prefix='mas-protocol-'))
-ADDON = pathlib.Path(__file__).with_name('mas_bridge.py')
+ADDON = pathlib.Path(__file__).with_name('saf_bridge.py')
 
 def port():
     with socket.socket() as s:

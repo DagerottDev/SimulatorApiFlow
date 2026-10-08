@@ -31,7 +31,7 @@ export function SidecarSettingsPanel() {
       });
       setSetting(next);
       setValue(next.configured ?? "");
-      setMessage("Capture executable preference saved. Restart Mobile API Studio before the next capture.");
+      setMessage("Capture executable preference saved. Restart SimulatorApiFlow before the next capture.");
       setError(null);
     } catch (reason) {
       setError(formatInvokeError(reason));
@@ -48,7 +48,7 @@ export function SidecarSettingsPanel() {
         executable: null,
       });
       setSetting(next);
-      setMessage("Automatic PATH discovery restored. Restart Mobile API Studio before the next capture.");
+      setMessage("Automatic PATH discovery restored. Restart SimulatorApiFlow before the next capture.");
       setError(null);
     } catch (reason) {
       setError(formatInvokeError(reason));
@@ -62,7 +62,7 @@ export function SidecarSettingsPanel() {
       <div className="panel-heading">
         <div>
           <strong>Capture sidecar</strong>
-          <span>Use automatic discovery or point Mobile API Studio at a managed mitmdump executable</span>
+          <span>Use automatic discovery or point SimulatorApiFlow at a managed mitmdump executable</span>
         </div>
         <span className="pill">restart to apply</span>
       </div>

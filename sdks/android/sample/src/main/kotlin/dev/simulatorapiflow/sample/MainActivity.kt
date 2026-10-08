@@ -1,4 +1,4 @@
-package dev.mobileapistudio.sample
+package dev.simulatorapiflow.sample
 
 import android.Manifest
 import android.app.Activity
@@ -10,10 +10,10 @@ import android.view.Gravity
 import android.widget.Button
 import android.widget.LinearLayout
 import android.widget.TextView
-import dev.mobileapistudio.sdk.MobileAPIStudio
-import dev.mobileapistudio.sdk.MobileAPIStudioConfiguration
-import dev.mobileapistudio.sdk.MobileAPIStudioInterceptor
-import dev.mobileapistudio.sdk.MobileAPIStudioLogLevel
+import dev.simulatorapiflow.sdk.SimulatorApiFlow
+import dev.simulatorapiflow.sdk.SimulatorApiFlowConfiguration
+import dev.simulatorapiflow.sdk.SimulatorApiFlowInterceptor
+import dev.simulatorapiflow.sdk.SimulatorApiFlowLogLevel
 import okhttp3.Call
 import okhttp3.Callback
 import okhttp3.OkHttpClient
@@ -26,14 +26,14 @@ class MainActivity : Activity() {
 
     private val client by lazy {
         OkHttpClient.Builder()
-            .addInterceptor(MobileAPIStudioInterceptor(feature = "Sample request"))
+            .addInterceptor(SimulatorApiFlowInterceptor(feature = "Sample request"))
             .build()
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        if (hasLocalNetworkPermission()) configureSdk() else MobileAPIStudio.disable()
+        if (hasLocalNetworkPermission()) configureSdk() else SimulatorApiFlow.disable()
 
         status = TextView(this).apply {
             text = sdkStatus()
@@ -59,7 +59,7 @@ class MainActivity : Activity() {
             checkSelfPermission(Manifest.permission.ACCESS_LOCAL_NETWORK) == PackageManager.PERMISSION_GRANTED
 
     private fun sdkStatus(): String = if (hasLocalNetworkPermission()) {
-        "SDK ${if (MobileAPIStudio.isEnabled) "enabled" else "disabled"}. Tap to make a correlated request."
+        "SDK ${if (SimulatorApiFlow.isEnabled) "enabled" else "disabled"}. Tap to make a correlated request."
     } else {
         "Local network permission is required for desktop capture. Tap to grant it, or allow Nearby devices in app settings."
     }
@@ -71,51 +71,51 @@ class MainActivity : Activity() {
     override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
         if (requestCode != 1) return
-        if (hasLocalNetworkPermission()) configureSdk() else MobileAPIStudio.disable()
+        if (hasLocalNetworkPermission()) configureSdk() else SimulatorApiFlow.disable()
         status.text = sdkStatus()
     }
 
     private fun configureSdk() {
         val debugEnabled = applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE != 0
-        MobileAPIStudio.configure(
+        SimulatorApiFlow.configure(
             this,
-            MobileAPIStudioConfiguration(enabled = debugEnabled),
+            SimulatorApiFlowConfiguration(enabled = debugEnabled),
         )
-        MobileAPIStudio.setContext(
+        SimulatorApiFlow.setContext(
             screen = "Sample Home",
             feature = "SDK Demo",
             attributes = mapOf("platform" to "android"),
         )
-        MobileAPIStudio.log("Android sample launched", MobileAPIStudioLogLevel.INFO)
+        SimulatorApiFlow.log("Android sample launched", SimulatorApiFlowLogLevel.INFO)
     }
 
     private fun sendRequest() {
         if (!hasLocalNetworkPermission()) {
-            MobileAPIStudio.disable()
+            SimulatorApiFlow.disable()
             status.text = sdkStatus()
             requestLocalNetworkPermission()
             return
         }
-        MobileAPIStudio.setContext(
+        SimulatorApiFlow.setContext(
             screen = "Sample Home",
             feature = "Load Demo API",
             attributes = mapOf("trigger" to "button"),
         )
         status.text = "Sending…"
         val request = Request.Builder()
-            .url("https://httpbin.org/anything/mobile-api-studio")
+            .url("https://httpbin.org/anything/simulator-api-flow")
             .get()
             .build()
 
         client.newCall(request).enqueue(object : Callback {
             override fun onFailure(call: Call, e: IOException) {
-                MobileAPIStudio.log("Sample request failed: ${e.message}", MobileAPIStudioLogLevel.ERROR)
+                SimulatorApiFlow.log("Sample request failed: ${e.message}", SimulatorApiFlowLogLevel.ERROR)
                 runOnUiThread { status.text = "Failed: ${e.message}" }
             }
 
             override fun onResponse(call: Call, response: Response) {
                 response.use {
-                    MobileAPIStudio.log(
+                    SimulatorApiFlow.log(
                         "Sample request completed",
                         attributes = mapOf("status" to it.code.toString()),
                     )

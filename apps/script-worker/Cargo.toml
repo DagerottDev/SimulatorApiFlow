@@ -1,5 +1,5 @@
 [package]
-name = "mobile-api-studio-script-worker"
+name = "simulator-api-flow-script-worker"
 version = "0.1.0"
 edition = "2024"
 

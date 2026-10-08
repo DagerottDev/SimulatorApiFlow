@@ -230,7 +230,7 @@ A rollback journal records device mutations that must survive an abnormal applic
 
 Current platform behavior:
 
-- **Android Emulator:** reads the prior global proxy, applies the Mobile API Studio proxy, and restores the previous value on disconnect/recovery.
+- **Android Emulator:** reads the prior global proxy, applies the SimulatorApiFlow proxy, and restores the previous value on disconnect/recovery.
 - **iOS Simulator:** one-click setup installs the local capture CA through `simctl` and optionally configures the selected current-route Mac network service's HTTP/HTTPS proxies. An embedded Swift helper uses native SystemConfiguration transactions and macOS network authorization; JSON travels over stdin, and blocking authorization runs outside the async worker. The original proxy dictionary and its presence, service ID and Network Location are journaled privately before mutation. Disable restores routing while leaving capture active; disconnect restores routing before stopping the listener. Effective routing is verified, active proxy/PAC/auth configurations are refused, and unexpected external changes are preserved. Manual app-scoped routing remains available.
 
 ## 7. Storage architecture

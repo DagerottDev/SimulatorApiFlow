@@ -25,7 +25,7 @@ See `apps/sharing-server/README.md` for deployment, token provisioning, limits a
 Verified on macOS with disposable loopback data: all 21 app-core checks; frontend production build; server HTTP check (roles, token rotation, last-owner protection, CAS, exact bytes/digest, expiry/revocation, redaction/malformed input rejection, origin isolation, bootstrap permissions and dangling database symlink refusal); combined native command path `scripts/check-sharing.py` (selected HAR preview/import, explicit upload, public exact bytes, identity-only sign-in, team publish/pull and disabled fresh-ID import preserving originals). No real traffic upload or external deployment occurred. The subsequent Mac computer-use run passed identity-only sign-in, selected redacted preview, explicit loopback upload and sign-out; see [the platform acceptance record](PLATFORM_ACCEPTANCE.md). Physical-device/release acceptance is separate.
 
 ```sh
-cargo build -p mobile-api-studio-server -p mobile-api-studio-sharing-server --offline --locked
-python3 apps/sharing-server/checks/http_check.py target/debug/mobile-api-studio-sharing-server
+cargo build -p simulator-api-flow-server -p simulator-api-flow-sharing-server --offline --locked
+python3 apps/sharing-server/checks/http_check.py target/debug/simulator-api-flow-sharing-server
 python3 scripts/check-sharing.py
 ```

@@ -245,7 +245,7 @@ export function ReplayView({ savedRequestId = null }: ReplayViewProps) {
 
   function downloadPreview() {
     const url = URL.createObjectURL(new Blob([exportPreview], { type: "text/plain" }));
-    const link = document.createElement("a"); link.href = url; link.download = `mobile-api-studio.${format === "har" ? "har" : format === "postman" ? "json" : format === "csv" ? "csv" : "txt"}`; link.click(); URL.revokeObjectURL(url);
+    const link = document.createElement("a"); link.href = url; link.download = `simulator-api-flow.${format === "har" ? "har" : format === "postman" ? "json" : format === "csv" ? "csv" : "txt"}`; link.click(); URL.revokeObjectURL(url);
   }
 
   function structuredBody(value: string, mode = bodyMode) {

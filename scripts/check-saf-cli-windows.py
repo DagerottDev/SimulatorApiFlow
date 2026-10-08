@@ -8,7 +8,7 @@ from ctypes import wintypes
 from pathlib import Path
 from unittest.mock import patch
 
-cli_path = Path(__file__).with_name("mas-cli.py")
+cli_path = Path(__file__).with_name("saf-cli.py")
 spec = importlib.util.spec_from_file_location("mas_cli_windows_check", cli_path)
 cli = importlib.util.module_from_spec(spec)
 sys.modules[spec.name] = cli
@@ -89,4 +89,4 @@ with patch.object(cli, "_windows_apis", return_value=(kernel, advapi)), \
     assert cli.windows_pipe_call(r"\\.\pipe\explicit-user-pipe", request) == b'{"ok":true}\n'
 assert sent == [request, None]
 
-print("mas-cli Windows peer authentication checks passed")
+print("saf-cli Windows peer authentication checks passed")

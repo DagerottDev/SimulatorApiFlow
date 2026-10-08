@@ -70,7 +70,7 @@ def main():
         with socket.socket() as reservation:
             reservation.bind(("127.0.0.1", 0))
             proxy_port = reservation.getsockname()[1]
-        addon = Path(__file__).resolve().parents[1] / "sidecars/mitm-addon/mas_bridge.py"
+        addon = Path(__file__).resolve().parents[1] / "sidecars/mitm-addon/saf_bridge.py"
         process = subprocess.Popen(["mitmdump", "--quiet", "--mode", "regular", "--listen-host", "127.0.0.1",
                                     "--listen-port", str(proxy_port), "--set", f"confdir={root / 'conf'}",
                                     "--set", "connection_strategy=lazy", "--set", f"ssl_verify_upstream_trusted_ca={cert}",

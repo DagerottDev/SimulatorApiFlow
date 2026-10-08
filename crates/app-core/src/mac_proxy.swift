@@ -3,7 +3,7 @@ import SystemConfiguration
 import Security
 
 // Xcode is already required for Simulator capture. No host settings are changed by list/prepare.
-func fail(_ message: String) throws -> Never { throw NSError(domain: "MobileAPIStudio", code: 1, userInfo: [NSLocalizedDescriptionKey: message]) }
+func fail(_ message: String) throws -> Never { throw NSError(domain: "SimulatorApiFlow", code: 1, userInfo: [NSLocalizedDescriptionKey: message]) }
 func captured(_ original: [String: Any]) -> [String: Any] {
     var result = original
     for prefix in ["HTTP", "HTTPS"] {
@@ -40,7 +40,7 @@ func effectiveMatches(_ settings: [String: Any], _ target: [String: Any]) -> Boo
     }
 }
 func preferences(_ authorization: AuthorizationRef? = nil) throws -> SCPreferences {
-    guard let prefs = authorization.map({ SCPreferencesCreateWithAuthorization(nil, "Mobile API Studio" as CFString, nil, $0) }) ?? SCPreferencesCreate(nil, "Mobile API Studio" as CFString, nil) else { try fail("Cannot read macOS network preferences.") }
+    guard let prefs = authorization.map({ SCPreferencesCreateWithAuthorization(nil, "SimulatorApiFlow" as CFString, nil, $0) }) ?? SCPreferencesCreate(nil, "SimulatorApiFlow" as CFString, nil) else { try fail("Cannot read macOS network preferences.") }
     return prefs
 }
 func location(_ prefs: SCPreferences) throws -> SCNetworkSet {
@@ -126,7 +126,7 @@ func run(_ input: [String: Any]) throws -> Any {
         if action == "enable" && primaryService() != id { try fail("The active network route changed. Select its network service before enabling routing.") }
         let proto = try proxyProtocol(prefs, id); let current = config(proto)
         let present = SCNetworkProtocolGetConfiguration(proto) != nil
-        guard (present == (lease["hadConfiguration"] as? Bool) && equal(current, before)) || (present && equal(current, expected)) else { try fail("Proxy settings changed outside Mobile API Studio. They were preserved; review Network settings before recovering.") }
+        guard (present == (lease["hadConfiguration"] as? Bool) && equal(current, before)) || (present && equal(current, expected)) else { try fail("Proxy settings changed outside SimulatorApiFlow. They were preserved; review Network settings before recovering.") }
         return proto
     }
     let initial = try checked(prefs)

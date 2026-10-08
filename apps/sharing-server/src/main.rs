@@ -174,7 +174,7 @@ async fn me(State(app): State<App>, h: HeaderMap) -> ApiResult<Json<Value>> {
     let db = app.db()?;
     let m = auth(&db, &h)?;
     Ok(Json(
-        json!({"teamId":"default","teamName":"Mobile API Studio team","userId":m.id,"userName":m.name,"role":m.role}),
+        json!({"teamId":"default","teamName":"SimulatorApiFlow team","userId":m.id,"userName":m.name,"role":m.role}),
     ))
 }
 #[derive(Deserialize)]
@@ -615,7 +615,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             }
             "--help" => {
                 println!(
-                    "mobile-api-studio-sharing-server --data-dir PRIVATE_DIRECTORY [--listen 127.0.0.1:8190] [--desktop-origin EXACT_ORIGIN]\nRemote listening is explicit opt-in; terminate TLS at a trusted reverse proxy. Bootstrap token: PRIVATE_DIRECTORY/owner-access-token (never logged)."
+                    "simulator-api-flow-sharing-server --data-dir PRIVATE_DIRECTORY [--listen 127.0.0.1:8190] [--desktop-origin EXACT_ORIGIN]\nRemote listening is explicit opt-in; terminate TLS at a trusted reverse proxy. Bootstrap token: PRIVATE_DIRECTORY/owner-access-token (never logged)."
                 );
                 return Ok(());
             }

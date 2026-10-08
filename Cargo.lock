@@ -2599,7 +2599,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "mobile-api-studio"
+name = "simulator-api-flow"
 version = "0.0.1"
 dependencies = [
  "ai-core",
@@ -2630,7 +2630,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "mobile-api-studio-script-worker"
+name = "simulator-api-flow-script-worker"
 version = "0.1.0"
 dependencies = [
  "rquickjs",
@@ -2638,7 +2638,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "mobile-api-studio-server"
+name = "simulator-api-flow-server"
 version = "0.0.1"
 dependencies = [
  "app-core",
@@ -2654,7 +2654,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "mobile-api-studio-sharing-server"
+name = "simulator-api-flow-sharing-server"
 version = "0.0.1"
 dependencies = [
  "axum",

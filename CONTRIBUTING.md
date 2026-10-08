@@ -1,6 +1,6 @@
 # Contributing
 
-Contributions to Mobile API Studio are welcome. Build the app using the instructions in [README.md](README.md), then use focused pull requests for changes.
+Contributions to SimulatorApiFlow are welcome. Build the app using the instructions in [README.md](README.md), then use focused pull requests for changes.
 
 By submitting a contribution, you agree that it may be distributed under this repository's [Apache-2.0 license](LICENSE). Do not include credentials, captured private traffic, certificate keys, or other people's data in issues or pull requests.
 
@@ -36,7 +36,7 @@ Include:
 - screenshots for UI changes when useful;
 - security/privacy implications when touching certificates, secrets, proxy settings, storage, SDK transport, exports, or AI context.
 
-For localhost changes, run the relevant checks locally and state their result. Useful commands are `cargo check --workspace --locked`, `cargo test -p mobile-api-studio-server`, and `npm run build --prefix apps/desktop`. These are contributor checks, not a CI release gate. See the [local validation record](docs/LOCALHOST_VALIDATION.md) for what has already been verified and what remains open.
+For localhost changes, run the relevant checks locally and state their result. Useful commands are `cargo check --workspace --locked`, `cargo test -p simulator-api-flow-server`, and `npm run build --prefix apps/desktop`. These are contributor checks, not a CI release gate. See the [local validation record](docs/LOCALHOST_VALIDATION.md) for what has already been verified and what remains open.
 
 ### Future feature PRs
 

@@ -244,9 +244,9 @@ impl CaptureEngine for MitmDumpEngine {
         if let Ok(executable) = std::env::current_exe() {
             if let Some(directory) = executable.parent() {
                 let worker = directory.join(if cfg!(windows) {
-                    "mobile-api-studio-script-worker.exe"
+                    "simulator-api-flow-script-worker.exe"
                 } else {
-                    "mobile-api-studio-script-worker"
+                    "simulator-api-flow-script-worker"
                 });
                 if worker.is_file() {
                     command.env("MAS_SCRIPT_WORKER", worker);
@@ -931,7 +931,7 @@ mod tests {
     #[cfg(unix)]
     #[test]
     fn tls_addon_diagnostics_are_allowlisted_deduplicated_and_observational() {
-        let addon = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../sidecars/mitm-addon/mas_bridge.py");
+        let addon = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../sidecars/mitm-addon/saf_bridge.py");
         let script = r#"
 import ast, json, sys, types, weakref
 names = {"_tls_handshake_diagnostic", "tls_failed_client", "tls_failed_server"}

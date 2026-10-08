@@ -1,4 +1,4 @@
-# Mobile API Studio — Implementation Record
+# SimulatorApiFlow — Implementation Record
 
 > **Status:** planned implementation Phases 0–5 are complete and merged to `main`. This document now records the as-built product scope rather than acting as a future implementation checklist. Formal testing, CI, benchmarks, and final validation remain deferred to the repository owner.
 
@@ -6,7 +6,7 @@ The original pre-build implementation plan remains available in Git history if h
 
 ## 1. Product outcome
 
-Mobile API Studio is a local-first desktop debugging environment for mobile API traffic. It combines runtime discovery, capture, inspection, replay, saved requests/environments, mocking, app-aware SDK context, cross-session comparison, and optional AI explanations.
+SimulatorApiFlow is a local-first desktop debugging environment for mobile API traffic. It combines runtime discovery, capture, inspection, replay, saved requests/environments, mocking, app-aware SDK context, cross-session comparison, and optional AI explanations.
 
 The product is intentionally optimized for the workflow:
 

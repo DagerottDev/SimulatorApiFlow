@@ -171,7 +171,7 @@ Validate:
 Validate from both captured and saved requests:
 
 - draft correctly copies allowed method/URL/headers/body;
-- internal Mobile API Studio correlation header is not sent;
+- internal SimulatorApiFlow correlation header is not sent;
 - sensitive captured headers remain protected according to the Replay contract;
 - URL/query/header/body edits are applied;
 - active environment variables resolve at send time;

@@ -130,7 +130,7 @@ impl AiProvider for OpenAiProvider {
                 },
                 {
                     "role": "user",
-                    "content": [{"type": "input_text", "text": format!("Analyze this redacted Mobile API Studio evidence:\n{}", request.context_json)}]
+                    "content": [{"type": "input_text", "text": format!("Analyze this redacted SimulatorApiFlow evidence:\n{}", request.context_json)}]
                 }
             ]
         });
@@ -435,7 +435,7 @@ fn truncate_string(value: &str, max_chars: usize) -> String {
         return value.to_string();
     }
     let prefix: String = value.chars().take(max_chars).collect();
-    format!("{}\n… <truncated by Mobile API Studio> …", prefix)
+    format!("{}\n… <truncated by SimulatorApiFlow> …", prefix)
 }
 
 fn safe_prefix(value: &str, max_bytes: usize) -> String {

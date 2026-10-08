@@ -10,7 +10,7 @@ What task is difficult today? Include the target platform and runtime when relev
 
 ## Proposed behavior
 
-What should Mobile API Studio do?
+What should SimulatorApiFlow do?
 
 ## Alternatives or constraints
 

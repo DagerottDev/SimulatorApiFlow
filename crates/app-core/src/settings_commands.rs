@@ -496,7 +496,7 @@ pub fn export_workspace_to_download(
         AppError::new("workspace_export_directory_failed", error.to_string(), true)
     })?;
     let path = download_dir.join(format!(
-        "mobile-api-studio-workspace-{}.mas.json",
+        "simulator-api-flow-workspace-{}.mas.json",
         bundle.exported_at
     ));
     fs::write(&path, bytes)

@@ -66,7 +66,7 @@ asyncio.run(check())
     env=os.environ.copy()
     env.update(H3_CERT=str(root/'cert.pem'), H3_KEY=str(root/'key.pem'), H3_UPSTREAM=str(upstream), H3_PROXY=str(proxy), MAS_SESSION_ID='h3-check')
     env.pop('MAS_RULE_SOCKET', None)
-    bridge = pathlib.Path(__file__).resolve().parents[1] / 'sidecars/mitm-addon/mas_bridge.py'
+    bridge = pathlib.Path(__file__).resolve().parents[1] / 'sidecars/mitm-addon/saf_bridge.py'
     process = subprocess.Popen(['mitmdump', '--mode', f'reverse:http3://127.0.0.1:{upstream}', '--listen-host', '127.0.0.1', '--listen-port', str(proxy), '--set', f'confdir={root}/conf', '--set', 'ssl_insecure=true', '--set', 'connection_strategy=lazy', '-s', str(bridge)], env=env, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
     try:
         client = subprocess.run([os.environ.get('HTTP3_PYTHON', sys.executable), str(addon)], env=env, capture_output=True, text=True, timeout=20)

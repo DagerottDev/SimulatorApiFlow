@@ -40,8 +40,8 @@ def get_json(url, timeout=2):
 
 def main():
     root = Path(__file__).resolve().parents[1]
-    local_binary = Path(os.environ.get("MAS_SERVER_BINARY", root / "target/debug/mobile-api-studio-server"))
-    sharing_binary = Path(os.environ.get("MAS_SHARING_SERVER_BINARY", root / "target/debug/mobile-api-studio-sharing-server"))
+    local_binary = Path(os.environ.get("MAS_SERVER_BINARY", root / "target/debug/simulator-api-flow-server"))
+    sharing_binary = Path(os.environ.get("MAS_SHARING_SERVER_BINARY", root / "target/debug/simulator-api-flow-sharing-server"))
     assert local_binary.is_file(), f"Missing local service binary: {local_binary}"
     assert sharing_binary.is_file(), f"Missing sharing service binary: {sharing_binary}"
 

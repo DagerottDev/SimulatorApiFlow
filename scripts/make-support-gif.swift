@@ -64,7 +64,7 @@ for frame in 0..<20 {
     }
 
     label("Buy me a coffee", at: NSPoint(x: 231, y: 111), size: 42, bold: true)
-    label("Support Mobile API Studio", at: NSPoint(x: 234, y: 78), size: 22)
+    label("Support SimulatorApiFlow", at: NSPoint(x: 234, y: 78), size: 22)
     label("INTERNATIONAL SUPPORT  ↗", at: NSPoint(x: 236, y: 43), size: 15, bold: true)
 
     NSGraphicsContext.restoreGraphicsState()

@@ -163,7 +163,7 @@ fn arguments() -> Result<(u16, bool, PathBuf), String> {
             }
             "--help" | "-h" => {
                 println!(
-                    "Usage: mobile-api-studio-server [--port PORT] [--no-open] [--data-dir PATH]"
+                    "Usage: simulator-api-flow-server [--port PORT] [--no-open] [--data-dir PATH]"
                 );
                 std::process::exit(0);
             }
@@ -240,7 +240,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     .layer(middleware::from_fn_with_state(state.clone(), guard))
     .with_state(state);
     let url = format!("http://127.0.0.1:{port}");
-    println!("Mobile API Studio: {url}");
+    println!("SimulatorApiFlow: {url}");
     if open_browser {
         let _ = platform::open_browser(&url);
     }

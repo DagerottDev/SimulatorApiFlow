@@ -1,4 +1,4 @@
-# Using Mobile API Studio
+# Using SimulatorApiFlow
 
 ## Start the workspace
 
@@ -61,17 +61,17 @@ In **Network**, create a profile, select global/app/host/endpoint scope, configu
 With the service running, use another terminal:
 
 ```sh
-printf '{}' | python3 scripts/mas-cli.py health
-printf '{}' | python3 scripts/mas-cli.py list_sessions
+printf '{}' | python3 scripts/saf-cli.py health
+printf '{}' | python3 scripts/saf-cli.py list_sessions
 ```
 
 For a custom macOS/Linux data directory:
 
 ```sh
-printf '{}' | python3 scripts/mas-cli.py --socket /absolute/path/to/separate-workspace/control/socket health
+printf '{}' | python3 scripts/saf-cli.py --socket /absolute/path/to/separate-workspace/control/socket health
 ```
 
-For an MCP client, configure a stdio process running `python3 /absolute/path/to/repository/scripts/mas-cli.py --mcp`; add `--socket` for a custom Unix endpoint. Windows uses a current-user named pipe. CLI JSON arguments come from stdin. The allowlist covers capture/session/search, rules, profiles and selected export; it does not grant arbitrary commands, secret access, AI calls or direct Replay.
+For an MCP client, configure a stdio process running `python3 /absolute/path/to/repository/scripts/saf-cli.py --mcp`; add `--socket` for a custom Unix endpoint. Windows uses a current-user named pipe. CLI JSON arguments come from stdin. The allowlist covers capture/session/search, rules, profiles and selected export; it does not grant arbitrary commands, secret access, AI calls or direct Replay.
 
 For JavaScript hooks, use **Mocks → Proxy rule → JavaScript hook** and define a synchronous `transform(event)` returning the complete edited event. Each invocation uses a disposable bounded QuickJS worker without host APIs. Failures stop the matching flow. Imported scripts stay disabled; source needs explicit export review. Contract and examples: [Scripting and automation](SCRIPTING_AUTOMATION.md).
 
@@ -81,7 +81,7 @@ Sharing is optional and self-hosted. To run a local sharing service on a support
 
 ```sh
 mkdir -m 700 /absolute/path/to/private-sharing-data
-cargo run -p mobile-api-studio-sharing-server -- --data-dir /absolute/path/to/private-sharing-data
+cargo run -p simulator-api-flow-sharing-server -- --data-dir /absolute/path/to/private-sharing-data
 ```
 
 Its default address is `http://127.0.0.1:8190`, separate from the app's UI port. Bootstrap creates a private `owner-access-token` file. Enter that token privately in **Sharing**, follow the service's token removal/rotation guidance, and keep it out of screenshots and shell history. Remote deployment requires your own HTTPS reverse proxy; none is configured by these commands.
